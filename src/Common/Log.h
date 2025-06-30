@@ -4,17 +4,23 @@
 #include <mutex>
 #include <windows.h>
 
-using namespace std;
+enum class LogLevel
+{
+    Temp,
+    Error
+};
 
 class Log
 {
 public:
     static void InitLogPath(HMODULE hModule);
 
-    static void WriteLog(const string &msg);
+    static void WriteLog(const std::string &msg, LogLevel level = LogLevel::Temp);
 
 private:
     static char logPath[MAX_PATH];
     
-    static mutex logMutex;
+    static std::mutex logMutex;
+
+    static const char* LogLevelToString(LogLevel level);
 };

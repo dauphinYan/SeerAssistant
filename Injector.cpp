@@ -1,7 +1,10 @@
+
 #include <windows.h>
 #include <tlhelp32.h>
 #include <iostream>
 #include <string>
+
+#include "src/Common/Log.h"
 
 #pragma comment(lib, "kernel32.lib")
 
@@ -122,7 +125,7 @@ DWORD GetProcessIdByKeyword(const std::string &keyword)
 
 int main()
 {
-    std::string processKeyword = "SeerLauncher"; // 只要进程名包含 Waking 即可
+    std::string processKeyword = "SeerLauncher";
 
     char fullPath[MAX_PATH] = {0};
     GetFullPathNameA("SocketHook.dll", MAX_PATH, fullPath, nullptr);
