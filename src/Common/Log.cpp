@@ -5,11 +5,13 @@
 #include <sstream>
 #include <thread>
 #include <direct.h>
+#include <sstream>
 
 char Log::logPath[MAX_PATH];
 std::mutex Log::logMutex;
 
-static std::string GetTimeStampForFileName() {
+static std::string GetTimeStampForFileName()
+{
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::ostringstream oss;
@@ -17,7 +19,8 @@ static std::string GetTimeStampForFileName() {
     return oss.str();
 }
 
-static std::string GetTimeStamp() {
+static std::string GetTimeStamp()
+{
     using namespace std::chrono;
     auto now = system_clock::now();
     auto in_time_t = system_clock::to_time_t(now);
@@ -28,24 +31,28 @@ static std::string GetTimeStamp() {
     return oss.str();
 }
 
-static std::thread::id GetThreadId() {
+static std::thread::id GetThreadId()
+{
     return std::this_thread::get_id();
 }
 
-const char* Log::LogLevelToString(LogLevel level)
+const char *Log::LogLevelToString(LogLevel level)
 {
     switch (level)
     {
-    case LogLevel::Temp: return "Temp";
-    case LogLevel::Error: return "Error";
-    default: return "Unknown";
+    case LogLevel::Temp:
+        return "Temp";
+    case LogLevel::Error:
+        return "Error";
+    default:
+        return "Unknown";
     }
 }
 
 void Log::InitLogPath(HMODULE hModule)
 {
     GetModuleFileNameA(hModule, logPath, MAX_PATH);
-    char* lastSlash = strrchr(logPath, '\\');
+    char *lastSlash = strrchr(logPath, '\\');
     if (lastSlash)
     {
         *(lastSlash + 1) = '\0';
@@ -59,7 +66,7 @@ void Log::InitLogPath(HMODULE hModule)
     _mkdir(logPath);
 
     std::string timeStr = GetTimeStampForFileName();
-    std::string fullPath = std::string(logPath) + "LogTemp-" + timeStr + ".txt";
+    std::string fullPath = std::string(logPath) + "LogUser-" + timeStr + ".log";
 
     strncpy(logPath, fullPath.c_str(), MAX_PATH - 1);
     logPath[MAX_PATH - 1] = '\0';
@@ -69,7 +76,8 @@ void Log::WriteLog(const std::string &msg, LogLevel level)
 {
     std::lock_guard<std::mutex> lock(logMutex);
     std::ofstream ofs(logPath, std::ios::app);
-    if (!ofs.is_open()) return;
+    if (!ofs.is_open())
+        return;
 
     ofs << "[" << GetTimeStamp() << "] "
         << "[ThreadID " << GetThreadId() << "] "

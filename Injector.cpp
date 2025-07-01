@@ -126,20 +126,40 @@ DWORD GetProcessIdByKeyword(const std::string &keyword)
 int main()
 {
     std::string processKeyword = "SeerLauncher";
+    std::string targetExePath = R"(C:\Users\henry\Desktop\C#\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)";
 
+    // 启动 SeerLauncher.exe。
+    std::cout << "[*] 正在启动 SeerLauncher.exe..." << std::endl;
+    STARTUPINFOA si = {sizeof(si)};
+    PROCESS_INFORMATION pi = {};
+
+    if (!CreateProcessA(
+            targetExePath.c_str(),
+            nullptr,
+            nullptr,
+            nullptr,
+            FALSE,
+            0,
+            nullptr,
+            nullptr,
+            &si,
+            &pi))
+    {
+        std::cerr << "[!] 无法启动 SeerLauncher.exe，错误码: " << GetLastError() << std::endl;
+        return 1;
+    }
+
+    std::cout << "[*] 等待进程启动..." << std::endl;
+    WaitForInputIdle(pi.hProcess, 5000);
+
+    // 获取DLL完整路径。
     char fullPath[MAX_PATH] = {0};
     GetFullPathNameA("SocketHook.dll", MAX_PATH, fullPath, nullptr);
     std::string dllPath = fullPath;
 
-    std::cout << "[*] 正在模糊查找包含 '" << processKeyword << "' 的进程..." << std::endl;
-    DWORD pid = GetProcessIdByKeyword(processKeyword);
-    if (pid == 0)
-    {
-        std::cerr << "[!] 未找到匹配的进程" << std::endl;
-        return 1;
-    }
-
-    std::cout << "[*] 找到进程 PID: " << pid << std::endl;
+    // 获取刚刚启动的进程 PID。
+    DWORD pid = pi.dwProcessId;
+    std::cout << "[*] 进程 PID: " << pid << std::endl;
     std::cout << "[*] 正在注入 DLL..." << std::endl;
 
     if (InjectDLL(pid, dllPath))
@@ -152,5 +172,11 @@ int main()
     }
 
     system("pause");
+
+    // TerminateProcess(pi.hProcess, 0);
+
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+
     return 0;
 }
