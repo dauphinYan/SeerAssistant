@@ -1,28 +1,57 @@
 #include "SocketHook.h"
 #include "src/Common/Log.h"
 #include "src/PacketParser/Packet.h"
+#include "src/PacketParser/Cryptor.h"
 #include <sstream>
 #include <iomanip>
 
 int WINAPI RecvEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
 {
     int Result = OriginalRecv(S, BufferPtr, Length, Flag); // 缓冲区长度。
-    if (Result > 0)
+
+    if (g_hookEnabled && Result > 0)
     {
-        std::ostringstream oss;
-        for (int i = 0; i < Result; ++i)
-        {
-            oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
-        }
-        std::string hexStr = oss.str();
+        std::lock_guard<std::mutex> lock(g_recvMutex);
+
+        // std::ostringstream oss;
+        // for (int i = 0; i < Result; ++i)
+        // {
+        //     oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
+        // }
+        // std::string hexStr = oss.str();
         // Log::WriteLog("[Hooked recv] Data (hex): " + hexStr);
 
-        vector<char> Temp(BufferPtr, BufferPtr + Result);
+        std::vector<char> Temp(BufferPtr, BufferPtr + Result);
 
-        Log::WriteLog("Processing recv packet...");
         PacketProcessor::ProcessRecvPacket(S, Temp, Result);
     }
+
     return Result;
+}
+
+DWORD WINAPI MonitorThread(LPVOID)
+{
+    const int toggleKey = VK_F8; // F8 键用于切换 Hook 开关
+    const int exitKey = VK_F9;   // F9 键用于关闭程序
+
+    while (g_running)
+    {
+        if (GetAsyncKeyState(toggleKey) & 1)
+        {
+            g_hookEnabled = !g_hookEnabled;
+            Log::WriteLog(g_hookEnabled ? "Hook Enabled" : "Hook Disabled");
+        }
+
+        if (GetAsyncKeyState(exitKey) & 1)
+        {
+            Log::WriteLog("Exit key pressed, shutting down...");
+            g_running = false;
+        }
+
+        Sleep(100);
+    }
+
+    return 0;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -64,14 +93,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         }
 
         Log::WriteLog("DLL is injected successful.");
+
+        Cryptor::InitKey("!crAckmE4nOthIng:-)");
+
+        CreateThread(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
     }
     else if (ul_reason_for_call == DLL_PROCESS_DETACH) // DLL与进程分离。
     {
         HMODULE ws2_32 = GetModuleHandleW(L"ws2_32");
-        if (ws2_32 != nullptr)
+        if (ws2_32)
         {
             LPVOID targetRecv = reinterpret_cast<LPVOID>(GetProcAddress(ws2_32, "recv"));
-            if (targetRecv != nullptr)
+            if (targetRecv)
             {
                 MH_DisableHook(targetRecv);
             }

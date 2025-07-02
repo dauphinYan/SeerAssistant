@@ -3,6 +3,7 @@ SRC = src/SocketHook/SocketHook.cpp \
       src/Common/Log.cpp \
       src/PacketParser/Packet.cpp \
       src/PacketParser/Cryptor.cpp \
+      src/MD5/MD5.cpp \
       src/MinHook/src/buffer.c \
       src/MinHook/src/hook.c \
       src/MinHook/src/trampoline.c \

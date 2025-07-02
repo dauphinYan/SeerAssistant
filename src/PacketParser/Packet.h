@@ -29,11 +29,18 @@ public:
     static PacketData ParsePacket(const vector<uint8_t> &Packet);
     static vector<uint8_t> GroupPacket(const PacketData &Data);
 
+    static bool ShouldDecrypt(const vector<uint8_t> &Cipher);
     static vector<uint8_t> DecryptPacket(const vector<uint8_t> &Cipher);
+
+    static void Logining(PacketData &InPacketData);
 
 private:
     static vector<uint8_t> s_RecvBuf;
-    static size_t s_RecvIndex;
+    static size_t s_RecvBufIndex;
+    static size_t s_RecvBufLen;
+    static size_t s_RecvNum;
     static SOCKET s_CurrentSocket;
     static bool s_HaveLogin;
+    static size_t s_SN;
+    static int32_t s_UserID;
 };
