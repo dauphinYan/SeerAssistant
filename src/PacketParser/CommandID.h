@@ -12,13 +12,13 @@ private:
 public:
     inline static std::string GetCommandName(int id)
     {
-        for (int i = 0; i < ID.size(); i++)
+        for (int i = 0; i < static_cast<int>(ID.size()); i++)
         {
             if (id == ID[i])
             {
                 return NAME[i];
             }
         }
-        return "FAIL_TO_GET_COMMAND_NAME";
+        return "————";
     }
-}
+};

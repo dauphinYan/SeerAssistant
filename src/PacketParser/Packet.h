@@ -9,21 +9,20 @@ using namespace std;
 
 struct PacketData
 {
-    int32_t Length;     // 包长 4字节
-    uint8_t Version;    // 版本 1字节
-    int32_t CmdID;      // 命令号 4字节
-    int32_t UserID;     // 米米号 4字节
-    int32_t SN;         // 序列号 4字节
+    int32_t Length;  // 包长 4字节
+    uint8_t Version; // 版本 1字节
+    int32_t CmdID;   // 命令号 4字节
+    int32_t UserID;  // 米米号 4字节
+    int32_t SN;      // 序列号 4字节
     std::vector<uint8_t> Body;
 
     void LogCout() const;
 };
 
-
-
 class PacketProcessor
 {
 public:
+    static void ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length);
     static void ProcessRecvPacket(SOCKET Socket, const vector<char> &Data, int Length);
 
     static PacketData ParsePacket(const vector<uint8_t> &Packet);

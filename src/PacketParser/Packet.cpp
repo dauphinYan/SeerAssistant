@@ -2,6 +2,7 @@
 #include "Cryptor.h"
 #include "src/Common/Log.h"
 #include "src/MD5/MD5.h"
+#include "CommandID.h"
 
 #include <sstream>
 #include <iomanip>
@@ -21,6 +22,7 @@ void PacketData::LogCout() const
     oss << "[Length=" << Length
         << " Version=" << static_cast<int>(Version)
         << " CmdID=" << CmdID
+        << " Cmd=" << Command::GetCommandName(CmdID)
         << " UserID=" << UserID
         << " SN=" << SN
         << " BodySize=" << Body.size()
@@ -40,45 +42,46 @@ void PacketData::LogCout() const
         oss << "]" << std::dec; // 恢复十进制
     }
 
-    // 将日志写入文件
     Log::WriteLog(oss.str(), LogLevel::Temp);
+}
+
+void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length)
+{
 }
 
 void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data, int Length)
 {
-    if (s_CurrentSocket == INVALID_SOCKET)
-    {
-        s_CurrentSocket = Socket;
-    }
+    if (Length > 100)
+        return;
 
     PacketData RecvPacketData = PacketData();
 
     s_RecvBuf.insert(s_RecvBuf.end(), Data.begin(), Data.begin() + Length);
 
-    // 判断接收的数据是否属于同一类数据
-    if (s_CurrentSocket != Socket)
-    {
-        // string bufferHex;
-        // for (size_t i = 0; i < s_RecvBuf.size(); ++i)
-        // {
-        //     char buf[4];
-        //     sprintf(buf, "%02X ", static_cast<unsigned char>(s_RecvBuf[i]));
-        //     bufferHex += buf;
-        // }
-        // Log::WriteLog("s_RecvBufIndex = " + std::to_string(s_RecvBufIndex));
-        // Log::WriteLog("s_RecvBuf = " + bufferHex);
+    // // 判断接收的数据是否属于同一类数据
+    // if (s_CurrentSocket != Socket)
+    // {
+    //     // string bufferHex;
+    //     // for (size_t i = 0; i < s_RecvBuf.size(); ++i)
+    //     // {
+    //     //     char buf[4];
+    //     //     sprintf(buf, "%02X ", static_cast<unsigned char>(s_RecvBuf[i]));
+    //     //     bufferHex += buf;
+    //     // }
+    //     // Log::WriteLog("s_RecvBufIndex = " + std::to_string(s_RecvBufIndex));
+    //     // Log::WriteLog("s_RecvBuf = " + bufferHex);
 
-        s_RecvBufIndex += Length;
+    //     s_RecvBufIndex += Length;
 
-        // 此时索引等于缓冲区长度，则说明刚好取完此包。
-        if (s_RecvBufIndex == s_RecvBuf.size())
-        {
-            s_RecvBuf.clear();
-            s_RecvBufIndex = 0;
-        }
+    //     // 此时索引等于缓冲区长度，则说明刚好取完此包。
+    //     if (s_RecvBufIndex == s_RecvBuf.size())
+    //     {
+    //         s_RecvBuf.clear();
+    //         s_RecvBufIndex = 0;
+    //     }
 
-        return;
-    }
+    //     return;
+    // }
 
     while (true)
     {
@@ -94,7 +97,6 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
         PacketLength = ntohl(PacketLength);
 
         // 包未齐，需等待。
-        Log::WriteLog("PacketLength = " + std::to_string(PacketLength) + ", Remain = " + std::to_string(Remain));
         if (Remain < PacketLength)
             break;
 
@@ -129,6 +131,7 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
         {
             s_RecvBuf.erase(s_RecvBuf.begin(), s_RecvBuf.begin() + s_RecvBufIndex);
             s_RecvBufIndex = 0;
+            s_CurrentSocket = Socket;
         }
     }
 }

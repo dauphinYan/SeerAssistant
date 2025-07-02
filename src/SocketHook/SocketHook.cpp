@@ -13,13 +13,13 @@ int WINAPI RecvEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
     {
         std::lock_guard<std::mutex> lock(g_recvMutex);
 
-        // std::ostringstream oss;
-        // for (int i = 0; i < Result; ++i)
-        // {
-        //     oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
-        // }
-        // std::string hexStr = oss.str();
-        // Log::WriteLog("[Hooked recv] Data (hex): " + hexStr);
+        std::ostringstream oss;
+        for (int i = 0; i < Result; ++i)
+        {
+            oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
+        }
+        std::string hexStr = oss.str();
+        Log::WriteLog("[Hooked recv] Data (hex): " + hexStr);
 
         std::vector<char> Temp(BufferPtr, BufferPtr + Result);
 
@@ -39,7 +39,7 @@ DWORD WINAPI MonitorThread(LPVOID)
         if (GetAsyncKeyState(toggleKey) & 1)
         {
             g_hookEnabled = !g_hookEnabled;
-            Log::WriteLog(g_hookEnabled ? "Hook Enabled" : "Hook Disabled");
+            Log::WriteLog(g_hookEnabled ? "Hook Enabled!" : "Hook Disabled!");
         }
 
         if (GetAsyncKeyState(exitKey) & 1)
