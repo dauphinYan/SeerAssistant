@@ -4,8 +4,6 @@
 #include <iostream>
 #include <string>
 
-#include "src/Common/Log.h"
-
 #pragma comment(lib, "kernel32.lib")
 
 // 获取进程ID
@@ -180,3 +178,35 @@ int main()
 
     return 0;
 }
+
+// int main()
+// {
+//     std::string processKeyword = "Seer"; // 只要进程名包含 Waking 即可
+
+//     char fullPath[MAX_PATH] = {0};
+//     GetFullPathNameA("SocketHook.dll", MAX_PATH, fullPath, nullptr);
+//     std::string dllPath = fullPath;
+
+//     std::cout << "[*] 正在模糊查找包含 '" << processKeyword << "' 的进程..." << std::endl;
+//     DWORD pid = GetProcessIdByKeyword(processKeyword);
+//     if (pid == 0)
+//     {
+//         std::cerr << "[!] 未找到匹配的进程" << std::endl;
+//         return 1;
+//     }
+
+//     std::cout << "[*] 找到进程 PID: " << pid << std::endl;
+//     std::cout << "[*] 正在注入 DLL..." << std::endl;
+
+//     if (InjectDLL(pid, dllPath))
+//     {
+//         std::cout << "[+] 注入完成。" << std::endl;
+//     }
+//     else
+//     {
+//         std::cerr << "[!] 注入失败。" << std::endl;
+//     }
+
+//     system("pause");
+//     return 0;
+// }

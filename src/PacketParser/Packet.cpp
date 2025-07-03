@@ -39,12 +39,12 @@ void PacketData::LogCout(bool bIsSend) const
         }
         if (Body.size() > toPrint)
             oss << "...";
-        oss << "]" << std::dec; // 恢复十进制
+        oss << "]" << std::dec;
     }
     if (bIsSend)
-        Log::WriteLog("[Hooked send] Parsed Data:" + oss.str(), LogLevel::Temp);
+        Log::WriteLog("[Hooked send] Parsed Data:" + oss.str());
     else
-        Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str(), LogLevel::Temp);
+        Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str());
 }
 
 void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length)
@@ -52,7 +52,7 @@ void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data,
     if (!(Data[0] == 0x00 && Data[1] == 0x00))
         return;
 
-    vector<uint8_t> SendBuf(Data.begin(), Data.end());
+    vector<uint8_t> Cipher(Data.begin(), Data.end());
 
     PacketData SendPacketData = PacketData();
 
@@ -61,7 +61,7 @@ void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data,
         s_CurrentSocket = Socket;
     }
 
-    vector<uint8_t> Plain = ShouldDecrypt(SendBuf) ? DecryptPacket(SendBuf) : SendBuf;
+    vector<uint8_t> Plain = ShouldDecrypt(Cipher) ? DecryptPacket(Cipher) : Cipher;
 
     SendPacketData = ParsePacket(Plain);
     SendPacketData.LogCout(true);
@@ -151,7 +151,7 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
         {
             s_RecvBuf.erase(s_RecvBuf.begin(), s_RecvBuf.begin() + s_RecvBufIndex);
             s_RecvBufIndex = 0;
-            s_CurrentSocket = Socket;
+            // s_CurrentSocket = Socket;
         }
     }
 }
@@ -239,8 +239,8 @@ vector<uint8_t> PacketProcessor::DecryptPacket(const vector<uint8_t> &Cipher)
 {
     // 从前4字节取出密文总长度。
     int32_t NetCipherLen = 0;
-    memcpy(&NetCipherLen, Cipher.data(), sizeof(NetCipherLen));
-    int32_t CipherLen = ntohl(NetCipherLen); // 大端转小端。
+    memcpy(&NetCipherLen, Cipher.data(), sizeof(NetCipherLen)); // 例如： 00 00 00 16
+    int32_t CipherLen = ntohl(NetCipherLen);                    // 大端转小端。
 
     // 因加密算法，明文长度 = 密文长度 - 1。
     vector<uint8_t> PlainLeHex = GetLenthHex(CipherLen - 1); // 小端转大端
@@ -250,7 +250,7 @@ vector<uint8_t> PacketProcessor::DecryptPacket(const vector<uint8_t> &Cipher)
 
     vector<uint8_t> Plain;
     Plain.resize(4);
-    memcpy(Plain.data(), &PlainLeHex, PlainLeHex.size());
+    memcpy(Plain.data(), PlainLeHex.data(), PlainLeHex.size());
 
     Plain.insert(Plain.end(), Decrypted.begin(), Decrypted.end());
 
@@ -261,27 +261,28 @@ void PacketProcessor::Logining(PacketData &InPacketData)
 {
     if (InPacketData.Body.size() < 4)
     {
-        // 长度不足，直接返回
         return;
     }
 
-    // 取后 4 字节（小端序）
+    // 1. 取尾 4 字节并按“大端”组装
     size_t n = InPacketData.Body.size();
-    uint32_t tail4 = static_cast<uint32_t>(InPacketData.Body[n - 4]) | (static_cast<uint32_t>(InPacketData.Body[n - 3]) << 8) | (static_cast<uint32_t>(InPacketData.Body[n - 2]) << 16) | (static_cast<uint32_t>(InPacketData.Body[n - 1]) << 24);
+    uint32_t tail4 = (static_cast<uint32_t>(InPacketData.Body[n - 1])) | (static_cast<uint32_t>(InPacketData.Body[n - 2]) << 8) | (static_cast<uint32_t>(InPacketData.Body[n - 3]) << 16) | (static_cast<uint32_t>(InPacketData.Body[n - 4]) << 24);
 
-    // 异或 userId 并转字符串
+    // 2. 异或 userId
     uint32_t xorRes = tail4 ^ static_cast<uint32_t>(InPacketData.UserID);
+
+    // 3. 转为字符串
     std::string plain = std::to_string(xorRes);
 
-    // 计算 MD5
+    // 4. 计算 MD5
     MD5 md5;
     md5.update(reinterpret_cast<const uint8_t *>(plain.data()), plain.size());
     md5.finalize();
     std::string md5hex = md5.hexdigest();
 
-    // 取前 10 字符作密钥
+    // 5. 取前 10 字符作密钥
     std::string key = md5hex.substr(0, 10);
 
-    // 调用外部算法初始化
+    // 初始化加密算法
     Cryptor::InitKey(key);
 }

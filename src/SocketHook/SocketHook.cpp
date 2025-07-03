@@ -11,7 +11,7 @@ int WINAPI RecvEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
 
     if (g_hookEnabled && Result > 0)
     {
-        std::lock_guard<std::mutex> lock(g_recvMutex);
+        std::lock_guard<std::mutex> lock(g_DataMutex);
 
         // std::ostringstream oss;
         // for (int i = 0; i < Result; ++i)
@@ -35,7 +35,7 @@ int WINAPI SendEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
 
     if (g_hookEnabled && Result > 0)
     {
-        std::lock_guard<std::mutex> lock(g_sendMutex);
+        std::lock_guard<std::mutex> lock(g_DataMutex);
 
         // std::ostringstream oss;
         // for (int i = 0; i < Result; ++i)
