@@ -15,7 +15,7 @@ bool PacketProcessor::s_HaveLogin = false;
 size_t PacketProcessor::s_SN = 0;
 int32_t PacketProcessor::s_UserID = 0;
 
-void PacketData::LogCout() const
+void PacketData::LogCout(bool bIsSend) const
 {
     std::ostringstream oss;
 
@@ -41,47 +41,67 @@ void PacketData::LogCout() const
             oss << "...";
         oss << "]" << std::dec; // 恢复十进制
     }
-
-    Log::WriteLog(oss.str(), LogLevel::Temp);
+    if (bIsSend)
+        Log::WriteLog("[Hooked send] Parsed Data:" + oss.str(), LogLevel::Temp);
+    else
+        Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str(), LogLevel::Temp);
 }
 
 void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length)
 {
+    if (!(Data[0] == 0x00 && Data[1] == 0x00))
+        return;
+
+    vector<uint8_t> SendBuf(Data.begin(), Data.end());
+
+    PacketData SendPacketData = PacketData();
+
+    if (!s_HaveLogin)
+    {
+        s_CurrentSocket = Socket;
+    }
+
+    vector<uint8_t> Plain = ShouldDecrypt(SendBuf) ? DecryptPacket(SendBuf) : SendBuf;
+
+    SendPacketData = ParsePacket(Plain);
+    SendPacketData.LogCout(true);
+
+    if (s_HaveLogin)
+    {
+        ++SendPacketData.SN;
+    }
 }
 
 void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data, int Length)
 {
-    if (Length > 100)
-        return;
-
     PacketData RecvPacketData = PacketData();
 
     s_RecvBuf.insert(s_RecvBuf.end(), Data.begin(), Data.begin() + Length);
 
-    // // 判断接收的数据是否属于同一类数据
-    // if (s_CurrentSocket != Socket)
-    // {
-    //     // string bufferHex;
-    //     // for (size_t i = 0; i < s_RecvBuf.size(); ++i)
-    //     // {
-    //     //     char buf[4];
-    //     //     sprintf(buf, "%02X ", static_cast<unsigned char>(s_RecvBuf[i]));
-    //     //     bufferHex += buf;
-    //     // }
-    //     // Log::WriteLog("s_RecvBufIndex = " + std::to_string(s_RecvBufIndex));
-    //     // Log::WriteLog("s_RecvBuf = " + bufferHex);
+    // 判断接收的数据是否属于同一类数据
+    if (s_CurrentSocket != Socket)
+    {
+        // string bufferHex;
+        // for (size_t i = 0; i < s_RecvBuf.size(); ++i)
+        // {
+        //     char buf[4];
+        //     sprintf(buf, "%02X ", static_cast<unsigned char>(s_RecvBuf[i]));
+        //     bufferHex += buf;
+        // }
+        // Log::WriteLog("s_RecvBufIndex = " + std::to_string(s_RecvBufIndex));
+        // Log::WriteLog("s_RecvBuf = " + bufferHex);
 
-    //     s_RecvBufIndex += Length;
+        s_RecvBufIndex += Length;
 
-    //     // 此时索引等于缓冲区长度，则说明刚好取完此包。
-    //     if (s_RecvBufIndex == s_RecvBuf.size())
-    //     {
-    //         s_RecvBuf.clear();
-    //         s_RecvBufIndex = 0;
-    //     }
+        // 此时索引等于缓冲区长度，则说明刚好取完此包。
+        if (s_RecvBufIndex == s_RecvBuf.size())
+        {
+            s_RecvBuf.clear();
+            s_RecvBufIndex = 0;
+        }
 
-    //     return;
-    // }
+        return;
+    }
 
     while (true)
     {
@@ -106,7 +126,7 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
 
         RecvPacketData = ParsePacket(Plain);
         ++s_RecvNum;
-        RecvPacketData.LogCout();
+        RecvPacketData.LogCout(false);
 
         // 如果是登录包
         if (RecvPacketData.CmdID == 1001)

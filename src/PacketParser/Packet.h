@@ -16,7 +16,7 @@ struct PacketData
     int32_t SN;      // 序列号 4字节
     std::vector<uint8_t> Body;
 
-    void LogCout() const;
+    void LogCout(bool bIsSend) const;
 };
 
 class PacketProcessor

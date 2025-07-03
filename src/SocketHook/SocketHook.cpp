@@ -13,17 +13,41 @@ int WINAPI RecvEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
     {
         std::lock_guard<std::mutex> lock(g_recvMutex);
 
-        std::ostringstream oss;
-        for (int i = 0; i < Result; ++i)
-        {
-            oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
-        }
-        std::string hexStr = oss.str();
-        Log::WriteLog("[Hooked recv] Data (hex): " + hexStr);
+        // std::ostringstream oss;
+        // for (int i = 0; i < Result; ++i)
+        // {
+        //     oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
+        // }
+        // std::string hexStr = oss.str();
+        // Log::WriteLog("[Hooked recv] Data (hex): " + hexStr);
 
         std::vector<char> Temp(BufferPtr, BufferPtr + Result);
 
         PacketProcessor::ProcessRecvPacket(S, Temp, Result);
+    }
+
+    return Result;
+}
+
+int WINAPI SendEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
+{
+    int Result = OriginalSend(S, BufferPtr, Length, Flag);
+
+    if (g_hookEnabled && Result > 0)
+    {
+        std::lock_guard<std::mutex> lock(g_sendMutex);
+
+        // std::ostringstream oss;
+        // for (int i = 0; i < Result; ++i)
+        // {
+        //     oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)BufferPtr[i] << " ";
+        // }
+        // std::string hexStr = oss.str();
+        // Log::WriteLog("[Hooked send] Data (hex): " + hexStr);
+
+        std::vector<char> Temp(BufferPtr, BufferPtr + Result);
+
+        PacketProcessor::ProcessSendPacket(S, Temp, Result);
     }
 
     return Result;
@@ -78,17 +102,36 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             return FALSE;
         }
 
+        LPVOID TargetSend = reinterpret_cast<LPVOID>(GetProcAddress(ws2_32, "send"));
+        if (TargetSend == nullptr)
+        {
+            Log::WriteLog("Fail to get send address.", LogLevel::Error);
+            return FALSE;
+        }
+
         // 创建钩子，强制类型转换函数指针。
         if (MH_CreateHook(TargetRecv, reinterpret_cast<LPVOID>(RecvEvent), reinterpret_cast<LPVOID *>(&OriginalRecv)) != MH_OK)
         {
-            Log::WriteLog("Fail to create hook.", LogLevel::Error);
+            Log::WriteLog("Fail to create recv hook.", LogLevel::Error);
+            return FALSE;
+        }
+
+        if (MH_CreateHook(TargetSend, reinterpret_cast<LPVOID>(SendEvent), reinterpret_cast<LPVOID *>(&OriginalSend)) != MH_OK)
+        {
+            Log::WriteLog("Fail to create send hook.", LogLevel::Error);
             return FALSE;
         }
 
         // 启用钩子。
         if (MH_EnableHook(TargetRecv) != MH_OK)
         {
-            Log::WriteLog("Fail to enable hook.", LogLevel::Error);
+            Log::WriteLog("Fail to enable recv hook.", LogLevel::Error);
+            return FALSE;
+        }
+
+        if (MH_EnableHook(TargetSend) != MH_OK)
+        {
+            Log::WriteLog("Fail to enable send hook.", LogLevel::Error);
             return FALSE;
         }
 
@@ -104,9 +147,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         if (ws2_32)
         {
             LPVOID targetRecv = reinterpret_cast<LPVOID>(GetProcAddress(ws2_32, "recv"));
+            LPVOID targetSend = reinterpret_cast<LPVOID>(GetProcAddress(ws2_32, "send"));
             if (targetRecv)
             {
                 MH_DisableHook(targetRecv);
+            }
+            if (targetSend)
+            {
+                MH_DisableHook(targetSend);
             }
         }
         MH_Uninitialize();
