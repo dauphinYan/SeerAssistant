@@ -5,9 +5,15 @@
 #include <sstream>
 #include <iomanip>
 
+/* 
+S：当前接收数据的端点。
+BufferPtr：指向缓冲区的指针，存放S接收的数据。
+Length：缓冲区的大小。
+Flag：接收标志位，控制接收方式。（本文没有用到）
+*/
 int WINAPI RecvEvent(SOCKET S, char *BufferPtr, int Length, int Flag)
 {
-    int Result = OriginalRecv(S, BufferPtr, Length, Flag); // 缓冲区长度。
+    int Result = OriginalRecv(S, BufferPtr, Length, Flag); // 实际接收到的长度。
 
     if (g_hookEnabled && Result > 0)
     {

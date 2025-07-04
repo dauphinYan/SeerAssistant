@@ -78,7 +78,7 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
 
     s_RecvBuf.insert(s_RecvBuf.end(), Data.begin(), Data.begin() + Length);
 
-    // 判断接收的数据是否属于同一类数据
+    // 是否是同一连接。
     if (s_CurrentSocket != Socket)
     {
         // string bufferHex;
