@@ -15,12 +15,12 @@ class Log
 public:
     static void InitLogPath(HMODULE hModule);
 
-    static void WriteLog(const std::string &msg, LogLevel level = LogLevel::Temp);
+    static void WriteLog(const std::string &msg, LogLevel level = LogLevel::Temp, bool bShouldWrite = true);
 
 private:
     static char logPath[MAX_PATH];
-    
+
     static std::mutex logMutex;
 
-    static const char* LogLevelToString(LogLevel level);
+    static const char *LogLevelToString(LogLevel level);
 };

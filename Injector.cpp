@@ -124,6 +124,7 @@ DWORD GetProcessIdByKeyword(const std::string &keyword)
 int main()
 {
     std::string processKeyword = "SeerLauncher";
+    // std::string targetExePath = R"(D:\Games\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
     std::string targetExePath = R"(C:\Users\henry\Desktop\C#\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)";
 
     // 启动 SeerLauncher.exe。

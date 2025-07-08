@@ -7,6 +7,8 @@
 
 using namespace std;
 
+enum class EClientType;
+
 struct PacketData
 {
     int32_t Length;  // 包长 4字节
@@ -22,6 +24,8 @@ struct PacketData
 class PacketProcessor
 {
 public:
+    static void SetClientType(EClientType InClientType);
+
     static void ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length);
     static void ProcessRecvPacket(SOCKET Socket, const vector<char> &Data, int Length);
 
@@ -42,4 +46,5 @@ private:
     static bool s_HaveLogin;
     static size_t s_SN;
     static int32_t s_UserID;
+    static EClientType ClientType;
 };

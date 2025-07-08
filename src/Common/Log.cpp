@@ -72,8 +72,10 @@ void Log::InitLogPath(HMODULE hModule)
     logPath[MAX_PATH - 1] = '\0';
 }
 
-void Log::WriteLog(const std::string &msg, LogLevel level)
+void Log::WriteLog(const std::string &msg, LogLevel level, bool bShouldWrite)
 {
+    if(!bShouldWrite)
+        return;
     std::lock_guard<std::mutex> lock(logMutex);
     std::ofstream ofs(logPath, std::ios::app);
     if (!ofs.is_open())

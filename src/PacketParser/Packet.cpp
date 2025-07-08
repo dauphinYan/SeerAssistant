@@ -3,6 +3,7 @@
 #include "src/Common/Log.h"
 #include "src/MD5/MD5.h"
 #include "CommandID.h"
+#include "src/SocketHook/SocketHook.h"
 
 #include <sstream>
 #include <iomanip>
@@ -14,6 +15,7 @@ SOCKET PacketProcessor::s_CurrentSocket = INVALID_SOCKET;
 bool PacketProcessor::s_HaveLogin = false;
 size_t PacketProcessor::s_SN = 0;
 int32_t PacketProcessor::s_UserID = 0;
+EClientType PacketProcessor::ClientType = EClientType::Flash;
 
 void PacketData::LogCout(bool bIsSend) const
 {
@@ -45,6 +47,11 @@ void PacketData::LogCout(bool bIsSend) const
         Log::WriteLog("[Hooked send] Parsed Data:" + oss.str());
     else
         Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str());
+}
+
+void PacketProcessor::SetClientType(EClientType InClientType)
+{
+    ClientType = InClientType;
 }
 
 void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length)
@@ -207,6 +214,9 @@ PacketData PacketProcessor::ParsePacket(const std::vector<uint8_t> &Packet)
 
 bool PacketProcessor::ShouldDecrypt(const std::vector<uint8_t> &Cipher)
 {
+    if (ClientType == EClientType::Unity)
+        return false;
+
     if (Cipher.size() < 8)
     {
         return true;
