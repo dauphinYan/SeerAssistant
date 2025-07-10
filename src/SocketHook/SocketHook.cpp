@@ -73,7 +73,7 @@ void InitHook(EClientType type)
 
 DWORD WINAPI InitHook_Thread(LPVOID lpParam)
 {
-    EClientType type = *reinterpret_cast<EClientType*>(lpParam);
+    EClientType type = *reinterpret_cast<EClientType *>(lpParam);
     InitHook(type);
     return 0;
 }
@@ -127,6 +127,7 @@ BOOL APIENTRY DllMain(HMODULE hMod, DWORD reason, LPVOID)
     if (reason == DLL_PROCESS_ATTACH)
     {
         Log::InitLogPath(hMod);
+        Log::InitBattleLogPath(hMod);
         Cryptor::InitKey("!crAckmE4nOthIng:-)");
     }
     else if (reason == DLL_PROCESS_DETACH)

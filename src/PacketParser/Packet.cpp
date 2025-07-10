@@ -4,9 +4,12 @@
 #include "src/MD5/MD5.h"
 #include "CommandID.h"
 #include "src/SocketHook/SocketHook.h"
+#include "src/Dispatcher/DispatcherManager.h"
 
 #include <sstream>
 #include <iomanip>
+
+EClientType PacketProcessor::ClientType = EClientType::Flash;
 
 vector<uint8_t> PacketProcessor::s_RecvBuf;
 size_t PacketProcessor::s_RecvBufIndex = 0;
@@ -15,10 +18,16 @@ SOCKET PacketProcessor::s_CurrentSocket = INVALID_SOCKET;
 bool PacketProcessor::s_HaveLogin = false;
 size_t PacketProcessor::s_SN = 0;
 int32_t PacketProcessor::s_UserID = 0;
-EClientType PacketProcessor::ClientType = EClientType::Flash;
+
+unordered_set<int32_t> PacketProcessor::FilterCmd = {3405};
 
 void PacketData::LogCout(bool bIsSend) const
 {
+    if (PacketProcessor::FilterCmd.find(CmdID) != PacketProcessor::FilterCmd.end())
+    {
+        return;
+    }
+
     std::ostringstream oss;
 
     oss << "[Length=" << Length
@@ -44,9 +53,15 @@ void PacketData::LogCout(bool bIsSend) const
         oss << "]" << std::dec;
     }
     if (bIsSend)
+    {
         Log::WriteLog("[Hooked send] Parsed Data:" + oss.str());
+    }
     else
+    {
         Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str());
+        if (CmdID == 2505)
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
+    }
 }
 
 void PacketProcessor::SetClientType(EClientType InClientType)
@@ -88,16 +103,6 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
     // 是否是同一连接。
     if (s_CurrentSocket != Socket)
     {
-        // string bufferHex;
-        // for (size_t i = 0; i < s_RecvBuf.size(); ++i)
-        // {
-        //     char buf[4];
-        //     sprintf(buf, "%02X ", static_cast<unsigned char>(s_RecvBuf[i]));
-        //     bufferHex += buf;
-        // }
-        // Log::WriteLog("s_RecvBufIndex = " + std::to_string(s_RecvBufIndex));
-        // Log::WriteLog("s_RecvBuf = " + bufferHex);
-
         s_RecvBufIndex += Length;
 
         // 此时索引等于缓冲区长度，则说明刚好取完此包。

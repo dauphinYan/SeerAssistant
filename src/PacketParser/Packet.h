@@ -4,6 +4,7 @@
 #include <string>
 #include <winsock2.h>
 #include <cstdint>
+#include <unordered_set>
 
 using namespace std;
 
@@ -16,7 +17,7 @@ struct PacketData
     int32_t CmdID;   // 命令号 4字节
     int32_t UserID;  // 米米号 4字节
     int32_t SN;      // 序列号 4字节
-    std::vector<uint8_t> Body;
+    vector<uint8_t> Body;
 
     void LogCout(bool bIsSend) const;
 };
@@ -38,6 +39,9 @@ public:
     static void Logining(PacketData &InPacketData);
 
 private:
+    static EClientType ClientType;
+
+private:
     static vector<uint8_t> s_RecvBuf;
     static size_t s_RecvBufIndex;
     static size_t s_RecvBufLen;
@@ -46,5 +50,7 @@ private:
     static bool s_HaveLogin;
     static size_t s_SN;
     static int32_t s_UserID;
-    static EClientType ClientType;
+
+public:
+    static unordered_set<int32_t> FilterCmd;
 };

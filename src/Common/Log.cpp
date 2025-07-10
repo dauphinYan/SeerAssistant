@@ -1,3 +1,6 @@
+
+#include "src/Dispatcher/DispatcherManager.h"
+#include "src/PacketParser/Packet.h"
 #include "Log.h"
 
 #include <chrono>
@@ -5,10 +8,13 @@
 #include <sstream>
 #include <thread>
 #include <direct.h>
-#include <sstream>
 
 char Log::logPath[MAX_PATH];
 std::mutex Log::logMutex;
+char Log::BattleLogPath[MAX_PATH];
+std::mutex Log::BattleLogMutex;
+
+std::string Log::timeStr;
 
 static std::string GetTimeStampForFileName()
 {
@@ -65,8 +71,11 @@ void Log::InitLogPath(HMODULE hModule)
     strcat(logPath, "Log\\");
     _mkdir(logPath);
 
-    std::string timeStr = GetTimeStampForFileName();
-    std::string fullPath = std::string(logPath) + "LogUser-" + timeStr + ".log";
+    strcat(logPath, "System\\");
+    _mkdir(logPath);
+
+    timeStr = GetTimeStampForFileName();
+    std::string fullPath = std::string(logPath) + "System-" + timeStr + ".log";
 
     strncpy(logPath, fullPath.c_str(), MAX_PATH - 1);
     logPath[MAX_PATH - 1] = '\0';
@@ -74,7 +83,7 @@ void Log::InitLogPath(HMODULE hModule)
 
 void Log::WriteLog(const std::string &msg, LogLevel level, bool bShouldWrite)
 {
-    if(!bShouldWrite)
+    if (!bShouldWrite)
         return;
     std::lock_guard<std::mutex> lock(logMutex);
     std::ofstream ofs(logPath, std::ios::app);
@@ -85,4 +94,69 @@ void Log::WriteLog(const std::string &msg, LogLevel level, bool bShouldWrite)
         << "[ThreadID " << GetThreadId() << "] "
         << "[" << LogLevelToString(level) << "] "
         << msg << "\n";
+}
+
+void Log::InitBattleLogPath(HMODULE hModule)
+{
+    GetModuleFileNameA(hModule, BattleLogPath, MAX_PATH);
+    char *lastSlash = strrchr(BattleLogPath, '\\');
+    if (lastSlash)
+    {
+        *(lastSlash + 1) = '\0';
+    }
+    else
+    {
+        strcpy(BattleLogPath, ".\\");
+    }
+
+    strcat(BattleLogPath, "Log\\");
+    _mkdir(BattleLogPath);
+
+    strcat(BattleLogPath, "User\\");
+    _mkdir(BattleLogPath);
+
+    std::string fullPath = std::string(BattleLogPath) + "BattleLog-" + timeStr + ".log";
+
+    strncpy(BattleLogPath, fullPath.c_str(), MAX_PATH - 1);
+    BattleLogPath[MAX_PATH - 1] = '\0';
+
+    DispatcherManager::RegisterPacketEvent(2505, &Log::OnUseSkillCmdReceived);
+}
+
+void Log::WriteBattleLog(const std::string &msg)
+{
+    std::lock_guard<std::mutex> lock(BattleLogMutex);
+    std::ofstream ofs(BattleLogPath, std::ios::app);
+    if (!ofs.is_open())
+        return;
+
+    ofs << msg << "\n";
+}
+
+void Log::OnUseSkillCmdReceived(const PacketData &Data)
+{
+    // 解析用户ID（大端序，前4字节）
+    uint32_t userId =
+        (static_cast<uint32_t>(Data.Body[0]) << 24) |
+        (static_cast<uint32_t>(Data.Body[1]) << 16) |
+        (static_cast<uint32_t>(Data.Body[2]) << 8) |
+        (static_cast<uint32_t>(Data.Body[3]));
+
+    // 解析技能ID（大端序，接下来的4字节）
+    uint32_t skillId =
+        (static_cast<uint32_t>(Data.Body[4]) << 24) |
+        (static_cast<uint32_t>(Data.Body[5]) << 16) |
+        (static_cast<uint32_t>(Data.Body[6]) << 8) |
+        (static_cast<uint32_t>(Data.Body[7]));
+
+    uint32_t finalHp =
+        (static_cast<uint32_t>(Data.Body[36]) << 24) |
+        (static_cast<uint32_t>(Data.Body[37]) << 16) |
+        (static_cast<uint32_t>(Data.Body[38]) << 8) |
+        (static_cast<uint32_t>(Data.Body[39]));
+
+    // 写入日志
+    WriteBattleLog("用户 " + std::to_string(userId));
+    WriteBattleLog("使用技能：" + std::to_string(skillId));
+    WriteBattleLog("最终血量：" + std::to_string(finalHp));
 }

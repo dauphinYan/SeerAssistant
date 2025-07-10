@@ -140,7 +140,7 @@ bool InjectDLL(DWORD pid, const std::string &dllPath, EClientType ClientType)
 
 int main()
 {
-    EClientType ClientType = EClientType::Unity;
+    EClientType ClientType = EClientType::Flash;
     std::string exePath = (ClientType == EClientType::Flash)
         ? R"(C:\Users\henry\Desktop\C#\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
         : R"(D:\Games\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
