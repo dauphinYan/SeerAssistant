@@ -1,40 +1,21 @@
-
 #include <windows.h>
 #include <tlhelp32.h>
+#include <psapi.h>
 #include <iostream>
 #include <string>
 
-#pragma comment(lib, "kernel32.lib")
+#pragma comment(lib, "psapi.lib")
 
-// 获取进程ID
-DWORD GetProcessIdByName(const std::string &processName)
+enum class EClientType
 {
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnapshot == INVALID_HANDLE_VALUE)
-        return 0;
+    Flash,
+    Unity
+};
 
-    PROCESSENTRY32 pe;
-    pe.dwSize = sizeof(PROCESSENTRY32);
-
-    if (Process32First(hSnapshot, &pe))
-    {
-        do
-        {
-            if (processName == pe.szExeFile)
-            {
-                CloseHandle(hSnapshot);
-                return pe.th32ProcessID;
-            }
-        } while (Process32Next(hSnapshot, &pe));
-    }
-
-    CloseHandle(hSnapshot);
-    return 0;
-}
-
-// 注入 DLL 到目标进程
-bool InjectDLL(DWORD pid, const std::string &dllPath)
+// 注入 DLL 并传递客户端类型参数
+bool InjectDLL(DWORD pid, const std::string &dllPath, EClientType ClientType)
 {
+    // 打开目标进程
     HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProcess)
     {
@@ -42,9 +23,9 @@ bool InjectDLL(DWORD pid, const std::string &dllPath)
         return false;
     }
 
-    // 分配内存存放 DLL 路径
-    LPVOID pRemoteMem = VirtualAllocEx(hProcess, nullptr, dllPath.size() + 1, MEM_COMMIT, PAGE_READWRITE);
-    if (!pRemoteMem)
+    // 分配远程内存用于 DLL 路径
+    LPVOID pRemotePath = VirtualAllocEx(hProcess, nullptr, dllPath.size() + 1, MEM_COMMIT, PAGE_READWRITE);
+    if (!pRemotePath)
     {
         std::cerr << "[!] 无法分配远程内存" << std::endl;
         CloseHandle(hProcess);
@@ -52,162 +33,144 @@ bool InjectDLL(DWORD pid, const std::string &dllPath)
     }
 
     // 写入 DLL 路径
-    if (!WriteProcessMemory(hProcess, pRemoteMem, dllPath.c_str(), dllPath.size() + 1, nullptr))
+    if (!WriteProcessMemory(hProcess, pRemotePath, dllPath.c_str(), dllPath.size() + 1, nullptr))
     {
         std::cerr << "[!] 写入远程内存失败" << std::endl;
-        VirtualFreeEx(hProcess, pRemoteMem, 0, MEM_RELEASE);
+        VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);
         CloseHandle(hProcess);
         return false;
     }
 
-    // 获取 LoadLibraryA 地址
-    LPTHREAD_START_ROUTINE loadLibraryRoutine = (LPTHREAD_START_ROUTINE)
+    // 远程加载 DLL
+    LPTHREAD_START_ROUTINE pLoadLibrary = (LPTHREAD_START_ROUTINE)
         GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
-    if (!loadLibraryRoutine)
+    HANDLE hThread = CreateRemoteThread(hProcess, nullptr, 0, pLoadLibrary, pRemotePath, 0, nullptr);
+    WaitForSingleObject(hThread, INFINITE);
+    CloseHandle(hThread);
+    VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);
+
+    // 获取远程 Module Base
+    HMODULE hMods[1024];
+    DWORD cbNeeded;
+    HMODULE hRemoteMod = nullptr;
+    if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
     {
-        std::cerr << "[!] 获取 LoadLibraryA 地址失败" << std::endl;
-        VirtualFreeEx(hProcess, pRemoteMem, 0, MEM_RELEASE);
-        CloseHandle(hProcess);
-        return false;
-    }
-
-    // 创建远程线程加载 DLL
-    HANDLE hRemoteThread = CreateRemoteThread(hProcess, nullptr, 0,
-                                              loadLibraryRoutine, pRemoteMem, 0, nullptr);
-    if (!hRemoteThread)
-    {
-        std::cerr << "[!] 创建远程线程失败" << std::endl;
-        VirtualFreeEx(hProcess, pRemoteMem, 0, MEM_RELEASE);
-        CloseHandle(hProcess);
-        return false;
-    }
-
-    WaitForSingleObject(hRemoteThread, INFINITE);
-
-    // 清理资源
-    VirtualFreeEx(hProcess, pRemoteMem, 0, MEM_RELEASE);
-    CloseHandle(hRemoteThread);
-    CloseHandle(hProcess);
-
-    std::cout << "[+] DLL 注入成功！" << std::endl;
-    return true;
-}
-
-DWORD GetProcessIdByKeyword(const std::string &keyword)
-{
-    DWORD pid = 0;
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnapshot != INVALID_HANDLE_VALUE)
-    {
-        PROCESSENTRY32 pe;
-        pe.dwSize = sizeof(PROCESSENTRY32);
-
-        if (Process32First(hSnapshot, &pe))
+        for (DWORD i = 0; i < cbNeeded / sizeof(HMODULE); ++i)
         {
-            do
+            CHAR modName[MAX_PATH] = {0};
+            if (GetModuleBaseNameA(hProcess, hMods[i], modName, MAX_PATH))
             {
-                std::string processName(pe.szExeFile);
-                // 检查进程名是否包含关键字
-                if (processName.find(keyword) != std::string::npos)
+                if (_stricmp(modName, "SocketHook.dll") == 0)
                 {
-                    pid = pe.th32ProcessID;
+                    hRemoteMod = hMods[i];
                     break;
                 }
-            } while (Process32Next(hSnapshot, &pe));
+            }
         }
-
-        CloseHandle(hSnapshot);
     }
-    return pid;
+    if (!hRemoteMod)
+    {
+        std::cerr << "[!] 未找到远程 SocketHook.dll" << std::endl;
+        CloseHandle(hProcess);
+        return false;
+    }
+
+    // 本地加载以获取 InitHook_Thread 偏移
+    HMODULE hLocalMod = LoadLibraryA(dllPath.c_str());
+    if (!hLocalMod)
+    {
+        std::cerr << "[!] 本地加载 DLL 失败" << std::endl;
+        CloseHandle(hProcess);
+        return false;
+    }
+    FARPROC pInitLocal = GetProcAddress(hLocalMod, "InitHook_Thread");
+    if (!pInitLocal)
+    {
+        std::cerr << "[!] 找不到 InitHook_Thread 导出" << std::endl;
+        FreeLibrary(hLocalMod);
+        CloseHandle(hProcess);
+        return false;
+    }
+    DWORD_PTR offset = (DWORD_PTR)pInitLocal - (DWORD_PTR)hLocalMod;
+    FreeLibrary(hLocalMod);
+
+    FARPROC pInitRemote = (FARPROC)((DWORD_PTR)hRemoteMod + offset);
+
+    // 分配并写入 EClientType 参数
+    LPVOID pRemoteArg = VirtualAllocEx(hProcess, nullptr, sizeof(EClientType), MEM_COMMIT, PAGE_READWRITE);
+    if (!pRemoteArg)
+    {
+        std::cerr << "[!] 无法分配参数内存" << std::endl;
+        CloseHandle(hProcess);
+        return false;
+    }
+    if (!WriteProcessMemory(hProcess, pRemoteArg, &ClientType, sizeof(EClientType), nullptr))
+    {
+        std::cerr << "[!] 写入参数失败" << std::endl;
+        VirtualFreeEx(hProcess, pRemoteArg, 0, MEM_RELEASE);
+        CloseHandle(hProcess);
+        return false;
+    }
+
+    // 远程调用 InitHook_Thread(LPVOID)
+    HANDLE hInitThread = CreateRemoteThread(
+        hProcess,
+        nullptr,
+        0,
+        (LPTHREAD_START_ROUTINE)pInitRemote,
+        pRemoteArg,
+        0,
+        nullptr
+    );
+    if (!hInitThread)
+    {
+        std::cerr << "[!] CreateRemoteThread 失败，错误码: " << GetLastError() << std::endl;
+        VirtualFreeEx(hProcess, pRemoteArg, 0, MEM_RELEASE);
+        CloseHandle(hProcess);
+        return false;
+    }
+    WaitForSingleObject(hInitThread, INFINITE);
+    CloseHandle(hInitThread);
+    VirtualFreeEx(hProcess, pRemoteArg, 0, MEM_RELEASE);
+
+    std::cout << "[+] DLL 注入并初始化成功！" << std::endl;
+    CloseHandle(hProcess);
+    return true;
 }
 
 int main()
 {
-    std::string processKeyword = "SeerLauncher";
-    // std::string targetExePath = R"(D:\Games\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
-    std::string targetExePath = R"(C:\Users\henry\Desktop\C#\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)";
+    EClientType ClientType = EClientType::Unity;
+    std::string exePath = (ClientType == EClientType::Flash)
+        ? R"(C:\Users\henry\Desktop\C#\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
+        : R"(D:\Games\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
 
-    // 启动 SeerLauncher.exe。
-    std::cout << "[*] 正在启动 SeerLauncher.exe..." << std::endl;
-    STARTUPINFOA si = {sizeof(si)};
+    STARTUPINFOA si = { sizeof(si) };
     PROCESS_INFORMATION pi = {};
-
-    if (!CreateProcessA(
-            targetExePath.c_str(),
-            nullptr,
-            nullptr,
-            nullptr,
-            FALSE,
-            0,
-            nullptr,
-            nullptr,
-            &si,
-            &pi))
+    if (!CreateProcessA(exePath.c_str(), nullptr, nullptr, nullptr,
+                        FALSE, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi))
     {
-        std::cerr << "[!] 无法启动 SeerLauncher.exe，错误码: " << GetLastError() << std::endl;
+        std::cerr << "[!] 无法启动目标进程，错误: " << GetLastError() << std::endl;
+        return 1;
+    }
+    std::cout << "[*] 目标 PID: " << pi.dwProcessId << std::endl;
+
+    // 获取 DLL 绝对路径
+    CHAR full[MAX_PATH] = {0};
+    GetFullPathNameA("SocketHook.dll", MAX_PATH, full, nullptr);
+    std::string dllPath(full);
+
+    // 恢复并注入
+    ResumeThread(pi.hThread);
+    WaitForInputIdle(pi.hProcess, 5000);
+    if (!InjectDLL(pi.dwProcessId, dllPath, ClientType))
+    {
+        std::cerr << "[!] 注入失败" << std::endl;
         return 1;
     }
 
-    std::cout << "[*] 等待进程启动..." << std::endl;
-    WaitForInputIdle(pi.hProcess, 5000);
-
-    // 获取DLL完整路径。
-    char fullPath[MAX_PATH] = {0};
-    GetFullPathNameA("SocketHook.dll", MAX_PATH, fullPath, nullptr);
-    std::string dllPath = fullPath;
-
-    // 获取刚刚启动的进程 PID。
-    DWORD pid = pi.dwProcessId;
-    std::cout << "[*] 进程 PID: " << pid << std::endl;
-    std::cout << "[*] 正在注入 DLL..." << std::endl;
-
-    if (InjectDLL(pid, dllPath))
-    {
-        std::cout << "[+] 注入完成。" << std::endl;
-    }
-    else
-    {
-        std::cerr << "[!] 注入失败。" << std::endl;
-    }
-
-    system("pause");
-
-    // TerminateProcess(pi.hProcess, 0);
-
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
-
+    system("pause");
     return 0;
 }
-
-// int main()
-// {
-//     std::string processKeyword = "Seer"; // 只要进程名包含 Waking 即可
-
-//     char fullPath[MAX_PATH] = {0};
-//     GetFullPathNameA("SocketHook.dll", MAX_PATH, fullPath, nullptr);
-//     std::string dllPath = fullPath;
-
-//     std::cout << "[*] 正在模糊查找包含 '" << processKeyword << "' 的进程..." << std::endl;
-//     DWORD pid = GetProcessIdByKeyword(processKeyword);
-//     if (pid == 0)
-//     {
-//         std::cerr << "[!] 未找到匹配的进程" << std::endl;
-//         return 1;
-//     }
-
-//     std::cout << "[*] 找到进程 PID: " << pid << std::endl;
-//     std::cout << "[*] 正在注入 DLL..." << std::endl;
-
-//     if (InjectDLL(pid, dllPath))
-//     {
-//         std::cout << "[+] 注入完成。" << std::endl;
-//     }
-//     else
-//     {
-//         std::cerr << "[!] 注入失败。" << std::endl;
-//     }
-
-//     system("pause");
-//     return 0;
-// }
