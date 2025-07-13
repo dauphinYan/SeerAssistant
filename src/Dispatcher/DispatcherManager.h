@@ -20,5 +20,8 @@ private:
     static std::unordered_map<uint32_t, std::vector<PacketEventHandler>> PacketEventHandlers;
 
 public:
-    void InitDispatcher();
+    static void InitDispatcher();
+
+private:
+    static void OnUseSkillCmdReceived(const PacketData &Data);
 };

@@ -1,6 +1,6 @@
 
 #include "src/Dispatcher/DispatcherManager.h"
-#include "src/PacketParser/Packet.h"
+#include "src/Net/PacketParser/Packet.h"
 #include "Log.h"
 
 #include <chrono>
@@ -120,7 +120,12 @@ void Log::InitBattleLogPath(HMODULE hModule)
     strncpy(BattleLogPath, fullPath.c_str(), MAX_PATH - 1);
     BattleLogPath[MAX_PATH - 1] = '\0';
 
-    DispatcherManager::RegisterPacketEvent(2505, &Log::OnUseSkillCmdReceived);
+    std::lock_guard<std::mutex> lock(BattleLogMutex);
+    std::ofstream ofs(BattleLogPath, std::ios::app);
+    if (!ofs.is_open())
+        return;
+
+    ofs << "BattaleLog is created." << "\n";
 }
 
 void Log::WriteBattleLog(const std::string &msg)
@@ -131,32 +136,4 @@ void Log::WriteBattleLog(const std::string &msg)
         return;
 
     ofs << msg << "\n";
-}
-
-void Log::OnUseSkillCmdReceived(const PacketData &Data)
-{
-    // 解析用户ID（大端序，前4字节）
-    uint32_t userId =
-        (static_cast<uint32_t>(Data.Body[0]) << 24) |
-        (static_cast<uint32_t>(Data.Body[1]) << 16) |
-        (static_cast<uint32_t>(Data.Body[2]) << 8) |
-        (static_cast<uint32_t>(Data.Body[3]));
-
-    // 解析技能ID（大端序，接下来的4字节）
-    uint32_t skillId =
-        (static_cast<uint32_t>(Data.Body[4]) << 24) |
-        (static_cast<uint32_t>(Data.Body[5]) << 16) |
-        (static_cast<uint32_t>(Data.Body[6]) << 8) |
-        (static_cast<uint32_t>(Data.Body[7]));
-
-    uint32_t finalHp =
-        (static_cast<uint32_t>(Data.Body[36]) << 24) |
-        (static_cast<uint32_t>(Data.Body[37]) << 16) |
-        (static_cast<uint32_t>(Data.Body[38]) << 8) |
-        (static_cast<uint32_t>(Data.Body[39]));
-
-    // 写入日志
-    WriteBattleLog("用户 " + std::to_string(userId));
-    WriteBattleLog("使用技能：" + std::to_string(skillId));
-    WriteBattleLog("最终血量：" + std::to_string(finalHp));
 }
