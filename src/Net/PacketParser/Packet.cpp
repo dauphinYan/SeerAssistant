@@ -3,7 +3,7 @@
 #include "src/Common/Log.h"
 #include "src/Net/MD5/MD5.h"
 #include "CommandID.h"
-#include "src/Net/SocketHook/SocketHook.h"
+#include "src/SocketHook/SocketHook.h"
 #include "src/Dispatcher/DispatcherManager.h"
 
 #include <sstream>

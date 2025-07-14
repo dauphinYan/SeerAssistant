@@ -1,6 +1,7 @@
 #include "DispatcherManager.h"
 #include "src/Net/PacketParser/Packet.h"
 #include "src/Common/Log.h"
+#include "src/GameCore/SkillManager.h"
 
 std::unordered_map<uint32_t, std::vector<DispatcherManager::PacketEventHandler>> DispatcherManager::PacketEventHandlers;
 
@@ -48,8 +49,10 @@ void DispatcherManager::OnUseSkillCmdReceived(const PacketData &Data)
         (static_cast<uint32_t>(Data.Body[38]) << 8) |
         (static_cast<uint32_t>(Data.Body[39]));
 
+    string SkillName = SkillManager::GetSkillNameByID(skillId);
+
     // 写入日志
     Log::WriteBattleLog("\n用户 " + std::to_string(userId));
-    Log::WriteBattleLog("使用技能：" + std::to_string(skillId));
+    Log::WriteBattleLog("使用技能：" + SkillName);
     Log::WriteBattleLog("剩余血量：" + std::to_string(finalHp));
 }
