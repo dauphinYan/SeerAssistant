@@ -63,8 +63,10 @@ void PacketData::LogCout(bool bIsSend) const
             Log::WriteBattleLog("\nBattle begin!");
         if (CmdID == 2505)
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if(CmdID == 2506)
+        if (CmdID == 2506)
             Log::WriteBattleLog("\nBattle end!\n");
+        if (CmdID == 2407)
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
     }
 }
 

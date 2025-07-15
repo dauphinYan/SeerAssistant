@@ -24,4 +24,6 @@ public:
 
 private:
     static void OnUseSkillCmdReceived(const PacketData &Data);
+
+    static void OnChangePetCmdReceived(const PacketData &Data);
 };

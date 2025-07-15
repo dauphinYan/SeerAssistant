@@ -6,14 +6,18 @@ SRC = src/SocketHook/SocketHook.cpp \
       src/Dispatcher/DispatcherManager.cpp \
       src/Net/MD5/MD5.cpp \
       src/GameCore/SkillManager.cpp \
-      src/Third/MinHook/src/buffer.c \
-      src/Third/MinHook/src/hook.c \
-      src/Third/MinHook/src/trampoline.c \
-      src/Third/MinHook/src/hde/hde64.c \
+      src/GameCore/PetManager.cpp \
+      src/Third/minHook/src/buffer.c \
+      src/Third/minHook/src/hook.c \
+      src/Third/minHook/src/trampoline.c \
+      src/Third/minHook/src/hde/hde64.c \
+      src/Third/tinyxml2/tinyxml2.cpp
 
 CXXFLAGS = -I. \
-            -I./src/Third/MinHook/include \
-            -I./src/Third/nlohmann -shared -Wall -O2 
+            -I./src/Third/minHook/include \
+            -I./src/Third/nlohmann \
+            -I./src/Third/tinyxml2 -shared -Wall -O2 
+            
 LDFLAGS = -lws2_32
 
 $(TARGET): $(SRC)

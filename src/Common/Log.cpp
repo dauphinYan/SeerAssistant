@@ -9,6 +9,7 @@
 #include <thread>
 #include <direct.h>
 
+
 char Log::logPath[MAX_PATH];
 std::mutex Log::logMutex;
 char Log::BattleLogPath[MAX_PATH];
