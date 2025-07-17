@@ -1,6 +1,6 @@
 
-#include "src/Dispatcher/DispatcherManager.h"
-#include "src/Net/PacketParser/Packet.h"
+// #include "src/Dispatcher/DispatcherManager.h"
+// #include "src/Net/PacketParser/Packet.h"
 #include "Log.h"
 
 #include <chrono>
@@ -9,6 +9,7 @@
 #include <thread>
 #include <direct.h>
 
+#include <iostream>
 
 char Log::logPath[MAX_PATH];
 std::mutex Log::logMutex;
@@ -56,27 +57,22 @@ const char *Log::LogLevelToString(LogLevel level)
     }
 }
 
-void Log::InitLogPath(HMODULE hModule)
+void Log::InitLogPath(char *InLogPath)
 {
-    GetModuleFileNameA(hModule, logPath, MAX_PATH);
-    char *lastSlash = strrchr(logPath, '\\');
-    if (lastSlash)
+    size_t len = strlen(InLogPath);
+    if (InLogPath[len - 1] != '\\')
     {
-        *(lastSlash + 1) = '\0';
-    }
-    else
-    {
-        strcpy(logPath, ".\\");
+        strcat(InLogPath, "\\");
     }
 
-    strcat(logPath, "Log\\");
-    _mkdir(logPath);
+    strcat(InLogPath, "Log\\");
+    _mkdir(InLogPath);
 
-    strcat(logPath, "System\\");
-    _mkdir(logPath);
+    strcat(InLogPath, "System\\");
+    _mkdir(InLogPath);
 
     timeStr = GetTimeStampForFileName();
-    std::string fullPath = std::string(logPath) + "System-" + timeStr + ".log";
+    std::string fullPath = std::string(InLogPath) + "System-" + timeStr + ".log";
 
     strncpy(logPath, fullPath.c_str(), MAX_PATH - 1);
     logPath[MAX_PATH - 1] = '\0';
@@ -97,9 +93,8 @@ void Log::WriteLog(const std::string &msg, LogLevel level, bool bShouldWrite)
         << msg << "\n";
 }
 
-void Log::InitBattleLogPath(HMODULE hModule)
+void Log::InitBattleLogPath(char *InBattleLogPath)
 {
-    GetModuleFileNameA(hModule, BattleLogPath, MAX_PATH);
     char *lastSlash = strrchr(BattleLogPath, '\\');
     if (lastSlash)
     {

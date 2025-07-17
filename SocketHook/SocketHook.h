@@ -22,8 +22,6 @@ extern std::mutex g_DataMutex;
 extern "C" __declspec(dllexport)
 DWORD WINAPI InitHook_Thread(LPVOID lpParam);
 
-// extern "C" __declspec(dllexport) void InitHook(EClientType type);
-
 // 原始函数指针
 extern decltype(&recv) OriginalRecv;
 extern decltype(&send) OriginalSend;

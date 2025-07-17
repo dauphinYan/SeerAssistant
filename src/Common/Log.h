@@ -15,7 +15,7 @@ enum class LogLevel
 class Log
 {
 public:
-    static void InitLogPath(HMODULE hModule);
+    static void InitLogPath(char* InlogPath);
 
     static void WriteLog(const std::string &msg, LogLevel level = LogLevel::Temp, bool bShouldWrite = true);
 
@@ -29,7 +29,7 @@ private:
     static const char *LogLevelToString(LogLevel level);
 
 public:
-    static void InitBattleLogPath(HMODULE hModule);
+    static void InitBattleLogPath(char* BattleLogPath);
 
     static void WriteBattleLog(const std::string &msg);
 

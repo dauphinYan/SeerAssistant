@@ -1,12 +1,5 @@
 TARGET = SocketHook.dll
-SRC = src/SocketHook/SocketHook.cpp \
-      src/Common/Log.cpp \
-      src/Net/PacketParser/Packet.cpp \
-      src/Net/PacketParser/Cryptor.cpp \
-      src/Dispatcher/DispatcherManager.cpp \
-      src/Net/MD5/MD5.cpp \
-      src/GameCore/SkillManager.cpp \
-      src/GameCore/PetManager.cpp \
+SRC = SocketHook/SocketHook.cpp \
       src/Third/minHook/src/buffer.c \
       src/Third/minHook/src/hook.c \
       src/Third/minHook/src/trampoline.c \
@@ -15,8 +8,7 @@ SRC = src/SocketHook/SocketHook.cpp \
 
 CXXFLAGS = -I. \
             -I./src/Third/minHook/include \
-            -I./src/Third/nlohmann \
-            -I./src/Third/tinyxml2 -shared -Wall -O2 
+            -shared -Wall -O2 
             
 LDFLAGS = -lws2_32
 
