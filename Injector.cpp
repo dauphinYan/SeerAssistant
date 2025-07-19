@@ -1,3 +1,4 @@
+#include <winsock2.h>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <psapi.h>
@@ -10,14 +11,11 @@
 #include <iomanip>
 
 #include "src/Common/Log.h"
+#include "src/Net/PacketParser/Packet.h"
+#include "src/Net/PacketParser/Cryptor.h"
+#include "src/Dispatcher/DispatcherManager.h"
 
 #pragma comment(lib, "psapi.lib")
-
-enum class EClientType
-{
-    Flash,
-    Unity
-};
 
 struct PacketHeader
 {
@@ -74,7 +72,16 @@ void PipeServerLoop()
             oss << std::hex << std::setw(2) << std::setfill('0')
                 << (unsigned int)(unsigned char)payload[i] << " ";
 
-        Log::WriteLog("[" + dirStr + "] " + oss.str(), LogLevel::Temp, true);
+        Log::WriteLog("[" + dirStr + "] " + oss.str(), LogLevel::Temp, false);
+
+        if (header.direction == 0)
+        {
+            PacketProcessor::ProcessRecvPacket(header.socket, payload, header.payloadSize);
+        }
+        else
+        {
+            PacketProcessor::ProcessSendPacket(header.socket, payload, header.payloadSize);
+        }
     }
 
     Log::WriteLog("管道断开，退出。");
@@ -204,6 +211,8 @@ int main()
 
     Log::InitLogPath(buffer);
     Log::InitBattleLogPath(buffer);
+    Cryptor::InitKey("!crAckmE4nOthIng:-)");
+    DispatcherManager::InitDispatcher();
 
     std::thread server(PipeServerLoop);
     EClientType ClientType = EClientType::Flash;
@@ -226,18 +235,19 @@ int main()
     std::string dllPath(full);
 
     ResumeThread(pi.hThread);
-    
+
     std::cout << "[*] 等待进程启动..." << std::endl;
     WaitForInputIdle(pi.hProcess, 15000);
-    
+
     Sleep(3000);
-    
+
     DWORD exitCode;
-    if (GetExitCodeProcess(pi.hProcess, &exitCode) && exitCode != STILL_ACTIVE) {
+    if (GetExitCodeProcess(pi.hProcess, &exitCode) && exitCode != STILL_ACTIVE)
+    {
         std::cerr << "[!] 目标进程已退出，退出码: " << exitCode << std::endl;
         return 1;
     }
-    
+
     std::cout << "[*] 开始注入DLL..." << std::endl;
     if (!InjectDLL(pi.dwProcessId, dllPath, ClientType))
     {

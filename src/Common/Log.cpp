@@ -34,7 +34,7 @@ static std::string GetTimeStamp()
     auto in_time_t = system_clock::to_time_t(now);
     auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
     std::ostringstream oss;
-    oss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S")
+    oss << std::put_time(std::localtime(&in_time_t), "%H:%M:%S")
         << '.' << std::setw(3) << std::setfill('0') << ms.count();
     return oss.str();
 }
@@ -124,8 +124,10 @@ void Log::InitBattleLogPath(char *InBattleLogPath)
     ofs << "BattaleLog is created." << "\n";
 }
 
-void Log::WriteBattleLog(const std::string &msg)
+void Log::WriteBattleLog(const std::string &msg, bool bShouldWrite)
 {
+    if (!bShouldWrite)
+        return;
     std::lock_guard<std::mutex> lock(BattleLogMutex);
     std::ofstream ofs(BattleLogPath, std::ios::app);
     if (!ofs.is_open())

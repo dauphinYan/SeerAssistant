@@ -8,7 +8,11 @@
 
 using namespace std;
 
-enum class EClientType;
+enum class EClientType
+{
+    Flash,
+    Unity
+};
 
 struct PacketData
 {
@@ -37,6 +41,8 @@ public:
     static vector<uint8_t> DecryptPacket(const vector<uint8_t> &Cipher);
 
     static void Logining(PacketData &InPacketData);
+
+    static uint32_t ReadUnsignedInt(const vector<uint8_t> &Data, int &Index);
 
 private:
     static EClientType ClientType;

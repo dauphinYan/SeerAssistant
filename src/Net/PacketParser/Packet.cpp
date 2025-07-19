@@ -3,7 +3,6 @@
 #include "src/Common/Log.h"
 #include "src/Net/MD5/MD5.h"
 #include "CommandID.h"
-#include "src/SocketHook/SocketHook.h"
 #include "src/Dispatcher/DispatcherManager.h"
 
 #include <sstream>
@@ -19,7 +18,7 @@ bool PacketProcessor::s_HaveLogin = false;
 size_t PacketProcessor::s_SN = 0;
 int32_t PacketProcessor::s_UserID = 0;
 
-unordered_set<int32_t> PacketProcessor::FilterCmd = {3405};
+unordered_set<int32_t> PacketProcessor::FilterCmd = {3405, 40002, 41080, 46046, 4047, 1002, 41228};
 
 void PacketData::LogCout(bool bIsSend) const
 {
@@ -260,8 +259,8 @@ vector<uint8_t> PacketProcessor::DecryptPacket(const vector<uint8_t> &Cipher)
 {
     // 从前4字节取出密文总长度。
     int32_t NetCipherLen = 0;
-    memcpy(&NetCipherLen, Cipher.data(), sizeof(NetCipherLen)); // 例如： 00 00 00 16
-    int32_t CipherLen = ntohl(NetCipherLen);                    // 大端转小端。
+    memcpy(&NetCipherLen, Cipher.data(), sizeof(NetCipherLen));
+    int32_t CipherLen = ntohl(NetCipherLen); // 大端转小端。
 
     // 因加密算法，明文长度 = 密文长度 - 1。
     vector<uint8_t> PlainLeHex = GetLenthHex(CipherLen - 1); // 小端转大端
@@ -306,4 +305,14 @@ void PacketProcessor::Logining(PacketData &InPacketData)
 
     // 初始化加密算法
     Cryptor::InitKey(key);
+}
+
+uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data, int &Index)
+{
+    uint32_t temp = (static_cast<uint32_t>(Data[Index]) << 24) |
+                    (static_cast<uint8_t>(Data[Index + 1]) << 16) |
+                    (static_cast<uint8_t>(Data[Index + 2]) << 8) |
+                    static_cast<uint8_t>(Data[Index + 3]);
+    Index += 4;
+    return temp;
 }
