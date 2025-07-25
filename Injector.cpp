@@ -217,7 +217,7 @@ int main()
     std::thread server(PipeServerLoop);
     EClientType ClientType = EClientType::Flash;
     std::string exePath = (ClientType == EClientType::Flash)
-                              ? R"(C:\Users\henry\Desktop\C#\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
+                              ? R"(C:\Users\58448\Desktop\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
                               : R"(D:\Games\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
 
     STARTUPINFOA si = {sizeof(si)};

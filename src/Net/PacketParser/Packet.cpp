@@ -42,6 +42,8 @@ void PacketData::LogCout(bool bIsSend) const
     {
         oss << "Body=[";
         size_t toPrint = std::min<size_t>(Body.size(), 16); // 最多打印前16个字节
+        if (CmdID == 45144)
+            toPrint = Body.size();
         for (size_t i = 0; i < toPrint; ++i)
         {
             oss << std::hex << std::setw(2) << std::setfill('0')
@@ -65,6 +67,8 @@ void PacketData::LogCout(bool bIsSend) const
         if (CmdID == 2506)
             Log::WriteBattleLog("\nBattle end!\n");
         if (CmdID == 2407)
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
+        if (CmdID == 41635)
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
     }
 }
@@ -314,5 +318,11 @@ uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data, int &Inde
                     (static_cast<uint8_t>(Data[Index + 2]) << 8) |
                     static_cast<uint8_t>(Data[Index + 3]);
     Index += 4;
+    return temp;
+}
+
+uint8_t PacketProcessor::ReadByte(const vector<uint8_t> &Data, int &Index)
+{
+    uint8_t temp = static_cast<uint8_t>(Data[Index++]);
     return temp;
 }

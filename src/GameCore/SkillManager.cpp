@@ -8,6 +8,9 @@ std::once_flag SkillManager::initFlag;
 
 std::string SkillManager::GetSkillNameByID(uint32_t TargetID)
 {
+    if (TargetID == 0)
+        return "未出手";
+
     if (PetSkills.empty())
     {
         std::call_once(initFlag, []()

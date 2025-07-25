@@ -88,7 +88,6 @@ void Log::WriteLog(const std::string &msg, LogLevel level, bool bShouldWrite)
         return;
 
     ofs << "[" << GetTimeStamp() << "] "
-        << "[ThreadID " << GetThreadId() << "] "
         << "[" << LogLevelToString(level) << "] "
         << msg << "\n";
 }

@@ -42,7 +42,10 @@ public:
 
     static void Logining(PacketData &InPacketData);
 
+public:
     static uint32_t ReadUnsignedInt(const vector<uint8_t> &Data, int &Index);
+
+    static uint8_t ReadByte(const vector<uint8_t> &Data, int &Index);
 
 private:
     static EClientType ClientType;
