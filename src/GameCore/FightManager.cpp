@@ -2,9 +2,30 @@
 #include "src/Net/PacketParser/Packet.h"
 #include "src/Common/Log.h"
 #include "SkillManager.h"
+#include "PetManager.h"
 
-void PetFightManager::ReadPetFightInfo(const PacketData &Data)
+uint32_t PetFightManager::PlayerID_0 = 0;
+uint32_t PetFightManager::PlayerID_1 = 0;
+int PetFightManager::RoundNumber = 1;
+
+bool PetFightManager::bIsChangePet = false;
+PacketData PetFightManager::ChangePetData = PacketData();
+uint32_t PetFightManager::ChangePetUser = 0;
+
+void PetFightManager::OnNoteStartFight(const PacketData &Data)
 {
+    Log::WriteBattleLog("Battle begin!");
+}
+
+void PetFightManager::OnFightOver(const PacketData &Data)
+{
+    Log::WriteBattleLog("Battle end!");
+    RoundNumber = 1;
+}
+
+void PetFightManager::OnNoteUseSkill(const PacketData &Data)
+{
+    Log::WriteBattleLog("———— 当前回合数：" + std::to_string(RoundNumber) + " ————");
     int offset = 0;
     for (int t = 0; t < 2; ++t)
     {
@@ -78,21 +99,6 @@ void PetFightManager::ReadPetFightInfo(const PacketData &Data)
             changehps.push_back(ChangeHpInfo);
         }
 
-        Log::WriteBattleLog("\n[UseSkill]\n用户 " + std::to_string(userId));
-        Log::WriteBattleLog("使用技能：【" + SkillManager::GetSkillNameByID(skillId) + "】造成伤害：" + std::to_string(lostHp) + "\n当前状态：" + std::to_string(remainHp) + "/" + std::to_string(maxHp));
-
-        for (const auto &info : changehps)
-        {
-            Log::WriteBattleLog(std::string("\n[ChangeHpInfo]\n") +
-                                    "ID: " + std::to_string(info.id) + "\n" +
-                                    "HP: " + std::to_string(info.hp) + "\n" +
-                                    "MaxHP: " + std::to_string(info.maxhp) + "\n" +
-                                    "Lock: " + std::to_string(info.lock) + "\n" +
-                                    "Chujue Number: " + std::to_string(info.chujueNumber) + "\n" +
-                                    "Chujue Round: " + std::to_string(info.chujueRound),
-                                false);
-        }
-
         uint32_t requireSwitchCthTime = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
         uint32_t maxHpSelf = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
         uint32_t maxHpOther = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
@@ -118,5 +124,91 @@ void PetFightManager::ReadPetFightInfo(const PacketData &Data)
 
         uint32_t zhuijiId = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
         uint32_t zhuijiHurt = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
+
+        // Print log.
+
+        if (bIsChangePet && userId == ChangePetUser)
+        {
+            ShowChangePetInfo(userId);
+            bIsChangePet = false;
+            ChangePetData = PacketData();
+            continue;
+        }
+
+        Log::WriteBattleLog("[UseSkill]\n用户 " + std::to_string(userId), false);
+        Log::WriteBattleLog((userId == PlayerID_0 ? "己方" : "对方") + std::string("使用技能：【") + SkillManager::GetSkillNameByID(skillId) + "】造成伤害：" + std::to_string(lostHp) + "\n当前状态：" + std::to_string(remainHp) + "/" + std::to_string(maxHp));
+
+        for (const auto &info : changehps)
+        {
+            Log::WriteBattleLog(std::string("[ChangeHpInfo]\n") +
+                                    "ID: " + std::to_string(info.id) + "\n" +
+                                    "HP: " + std::to_string(info.hp) + "\n" +
+                                    "MaxHP: " + std::to_string(info.maxhp) + "\n" +
+                                    "Lock: " + std::to_string(info.lock) + "\n" +
+                                    "Chujue Number: " + std::to_string(info.chujueNumber) + "\n" +
+                                    "Chujue Round: " + std::to_string(info.chujueRound),
+                                false);
+        }
     }
+
+    ++RoundNumber;
+}
+
+void PetFightManager::OnGetUserPerInfoByID(const PacketData &Data)
+{
+    int offset = 0;
+
+    uint32_t PetCount = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
+
+    uint32_t Rub = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
+
+    vector<EOtherPeoplePetInfo> Pets;
+    for (int i = 0; i < PetCount; ++i)
+    {
+        EOtherPeoplePetInfo pet = PetManager::GetOtherPeoplePetInfo(Data, offset);
+        Pets.push_back(pet);
+    }
+
+    string PetNames;
+    for (auto Pet : Pets)
+    {
+        PetNames += (PetManager::GetPetName(Pet.id) + " ");
+    }
+    Log::WriteBattleLog("[Match Success]\n对手当前精灵：" + PetNames);
+}
+
+void PetFightManager::OnChangePet(const PacketData &Data)
+{
+    bIsChangePet = true;
+    ChangePetData = Data;
+    int offset = 0;
+    ChangePetUser = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
+}
+
+void PetFightManager::SetPlayerID_0(uint32_t InID)
+{
+    PlayerID_0 = InID;
+}
+
+void PetFightManager::SetPlayerID_1(uint32_t InID)
+{
+    PlayerID_1 = InID;
+}
+
+void PetFightManager::ShowChangePetInfo(const uint32_t curId)
+{
+    int offset = 0;
+
+    uint32_t userId = PacketProcessor::ReadUnsignedInt(ChangePetData.Body, offset);
+    uint32_t petId = PacketProcessor::ReadUnsignedInt(ChangePetData.Body, offset);
+    uint32_t catchTime = PacketProcessor::ReadUnsignedInt(ChangePetData.Body, offset);
+    offset += 16;
+    uint32_t level = PacketProcessor::ReadUnsignedInt(ChangePetData.Body, offset);
+    uint32_t hp = PacketProcessor::ReadUnsignedInt(ChangePetData.Body, offset);
+    uint32_t maxHp = PacketProcessor::ReadUnsignedInt(ChangePetData.Body, offset);
+
+    std::string PetName = PetManager::GetPetName(petId);
+    Log::WriteBattleLog("[ChangePet]\n" +
+                        std::string(userId == PlayerID_0 ? "己方切换精灵【" : "对方切换精灵【") + PetName + "】\n" +
+                        "切换精灵状态: " + std::to_string(hp) + "/" + std::to_string(maxHp));
 }

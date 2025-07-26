@@ -120,7 +120,7 @@ void Log::InitBattleLogPath(char *InBattleLogPath)
     if (!ofs.is_open())
         return;
 
-    ofs << "BattaleLog is created." << "\n";
+    ofs << "BattaleLog is created." << "\n\n";
 }
 
 void Log::WriteBattleLog(const std::string &msg, bool bShouldWrite)
@@ -132,5 +132,5 @@ void Log::WriteBattleLog(const std::string &msg, bool bShouldWrite)
     if (!ofs.is_open())
         return;
 
-    ofs << msg << "\n";
+    ofs << msg << "\n\n";
 }

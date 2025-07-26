@@ -4,6 +4,7 @@
 #include "src/Net/MD5/MD5.h"
 #include "CommandID.h"
 #include "src/Dispatcher/DispatcherManager.h"
+#include "src/GameCore/FightManager.h"
 
 #include <sstream>
 #include <iomanip>
@@ -61,11 +62,11 @@ void PacketData::LogCout(bool bIsSend) const
     {
         Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str());
         if (CmdID == 2504)
-            Log::WriteBattleLog("\nBattle begin!");
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 2505)
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 2506)
-            Log::WriteBattleLog("\nBattle end!\n");
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 2407)
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 41635)
@@ -157,6 +158,7 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
             s_SN = RecvPacketData.SN;
             s_UserID = RecvPacketData.UserID;
             s_HaveLogin = true;
+            PetFightManager::SetPlayerID_0(s_UserID);
         }
 
         s_RecvBufIndex += PacketLength;

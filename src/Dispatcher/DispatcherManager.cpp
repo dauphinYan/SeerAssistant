@@ -28,57 +28,34 @@ void DispatcherManager::DispatchPacketEvent(int32_t CmdID, const PacketData &Dat
 
 void DispatcherManager::InitDispatcher()
 {
-    DispatcherManager::RegisterPacketEvent(2505, &DispatcherManager::OnUseSkillCmdReceived);
+    DispatcherManager::RegisterPacketEvent(2504, &DispatcherManager::OnNoteStartFightCmdReceived);
+    DispatcherManager::RegisterPacketEvent(2506, &DispatcherManager::OnFightOverCmdReceived);
+    DispatcherManager::RegisterPacketEvent(2505, &DispatcherManager::OnNoteUseSkillCmdReceived);
     DispatcherManager::RegisterPacketEvent(2407, &DispatcherManager::OnChangePetCmdReceived);
     DispatcherManager::RegisterPacketEvent(41635, &DispatcherManager::OnGetUserPerInfoByIDCmdReceived);
 }
 
-void DispatcherManager::OnUseSkillCmdReceived(const PacketData &Data)
+void DispatcherManager::OnNoteStartFightCmdReceived(const PacketData &Data)
 {
-    PetFightManager::ReadPetFightInfo(Data);
+    PetFightManager::OnNoteStartFight(Data);
+}
+
+void DispatcherManager::OnFightOverCmdReceived(const PacketData &Data)
+{
+    PetFightManager::OnFightOver(Data);
+}
+
+void DispatcherManager::OnNoteUseSkillCmdReceived(const PacketData &Data)
+{
+    PetFightManager::OnNoteUseSkill(Data);
 }
 
 void DispatcherManager::OnChangePetCmdReceived(const PacketData &Data)
 {
-    auto readUint32BE = [&](int offset) -> uint32_t
-    {
-        return (static_cast<uint32_t>(Data.Body[offset]) << 24) |
-               (static_cast<uint32_t>(Data.Body[offset + 1]) << 16) |
-               (static_cast<uint32_t>(Data.Body[offset + 2]) << 8) |
-               (static_cast<uint32_t>(Data.Body[offset + 3]));
-    };
-
-    uint32_t userId = readUint32BE(0);
-    uint32_t petId = readUint32BE(4);
-    uint32_t hp = readUint32BE(32);
-    uint32_t maxHp = readUint32BE(36);
-
-    string PetName = PetManager::GetPetName(petId);
-
-    Log::WriteBattleLog("\n[ChangePet]\n用户: " + std::to_string(userId));
-    Log::WriteBattleLog("当前精灵：" + PetName);
-    Log::WriteBattleLog("当前血量: " + std::to_string(hp));
-    Log::WriteBattleLog("最大血量: " + std::to_string(maxHp));
+    PetFightManager::OnChangePet(Data);
 }
 
 void DispatcherManager::OnGetUserPerInfoByIDCmdReceived(const PacketData &Data)
 {
-    int offset = 0;
-
-    uint32_t PetCount = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
-
-    uint32_t Rub = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
-
-    vector<EOtherPeoplePetInfo> Pets;
-    for (int i = 0; i < PetCount; ++i)
-    {
-        EOtherPeoplePetInfo pet = PetManager::GetOtherPeoplePetInfo(Data, offset);
-        Pets.push_back(pet);
-    }
-
-    Log::WriteBattleLog("\n[Match Success]\n对手当前精灵：");
-    for (auto Pet : Pets)
-    {
-        Log::WriteBattleLog(PetManager::GetPetName(Pet.id));
-    }
+    PetFightManager::OnGetUserPerInfoByID(Data);
 }

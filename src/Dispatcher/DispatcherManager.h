@@ -23,7 +23,11 @@ public:
     static void InitDispatcher();
 
 private:
-    static void OnUseSkillCmdReceived(const PacketData &Data);
+    static void OnNoteStartFightCmdReceived(const PacketData &Data);
+
+    static void OnFightOverCmdReceived(const PacketData &Data);
+
+    static void OnNoteUseSkillCmdReceived(const PacketData &Data);
 
     static void OnChangePetCmdReceived(const PacketData &Data);
 
