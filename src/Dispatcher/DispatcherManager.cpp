@@ -1,9 +1,9 @@
 #include "DispatcherManager.h"
-#include "src/Net/PacketParser/Packet.h"
-#include "src/Common/Log.h"
-#include "src/GameCore/SkillManager.h"
-#include "src/GameCore/PetManager.h"
-#include "src/GameCore/FightManager.h"
+#include "Src/Net/PacketParser/Packet.h"
+#include "Src/Common/Log.h"
+#include "Src/GameCore/SkillManager.h"
+#include "Src/GameCore/PetManager.h"
+#include "Src/GameCore/FightManager.h"
 
 #include <iostream>
 
@@ -33,6 +33,7 @@ void DispatcherManager::InitDispatcher()
     DispatcherManager::RegisterPacketEvent(2505, &DispatcherManager::OnNoteUseSkillCmdReceived);
     DispatcherManager::RegisterPacketEvent(2407, &DispatcherManager::OnChangePetCmdReceived);
     DispatcherManager::RegisterPacketEvent(41635, &DispatcherManager::OnGetUserPerInfoByIDCmdReceived);
+    DispatcherManager::RegisterPacketEvent(45141, &DispatcherManager::On45141CmdReceived);
 }
 
 void DispatcherManager::OnNoteStartFightCmdReceived(const PacketData &Data)
@@ -58,4 +59,10 @@ void DispatcherManager::OnChangePetCmdReceived(const PacketData &Data)
 void DispatcherManager::OnGetUserPerInfoByIDCmdReceived(const PacketData &Data)
 {
     PetFightManager::OnGetUserPerInfoByID(Data);
+}
+
+void DispatcherManager::On45141CmdReceived(const PacketData &Data)
+{
+    int offset = 4;
+    PetFightManager::SetPlayerID_1(PacketProcessor::ReadUnsignedInt(Data.Body, offset));
 }

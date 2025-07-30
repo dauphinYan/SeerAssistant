@@ -37,6 +37,4 @@ private:
     static char BattleLogPath[MAX_PATH];
 
     static std::mutex BattleLogMutex;
-
-    static void OnUseSkillCmdReceived(const PacketData &Data);
 };

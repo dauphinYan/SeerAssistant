@@ -32,4 +32,6 @@ private:
     static void OnChangePetCmdReceived(const PacketData &Data);
 
     static void OnGetUserPerInfoByIDCmdReceived(const PacketData &Data);
+
+    static void On45141CmdReceived(const PacketData &Data);
 };

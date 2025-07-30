@@ -1,6 +1,6 @@
-#include "src/Common/Log.h"
+#include "Src/Common/Log.h"
 #include "PetManager.h"
-#include "src/Net/PacketParser/Packet.h"
+#include "Src/Net/PacketParser/Packet.h"
 
 #include <iostream>
 

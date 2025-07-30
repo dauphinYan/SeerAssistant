@@ -1,10 +1,10 @@
 #include "Packet.h"
 #include "Cryptor.h"
-#include "src/Common/Log.h"
-#include "src/Net/MD5/MD5.h"
+#include "Src/Common/Log.h"
+#include "Src/Net/MD5/MD5.h"
 #include "CommandID.h"
-#include "src/Dispatcher/DispatcherManager.h"
-#include "src/GameCore/FightManager.h"
+#include "Src/Dispatcher/DispatcherManager.h"
+#include "Src/GameCore/FightManager.h"
 
 #include <sstream>
 #include <iomanip>
@@ -57,6 +57,7 @@ void PacketData::LogCout(bool bIsSend) const
     if (bIsSend)
     {
         Log::WriteLog("[Hooked send] Parsed Data:" + oss.str());
+
     }
     else
     {
@@ -69,7 +70,9 @@ void PacketData::LogCout(bool bIsSend) const
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 2407)
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 41635)
+        if (CmdID == 41635) // GET_USERPERINFO_BY_ID
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
+        if (CmdID == 45141)
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
     }
 }
@@ -320,6 +323,15 @@ uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data, int &Inde
                     (static_cast<uint8_t>(Data[Index + 2]) << 8) |
                     static_cast<uint8_t>(Data[Index + 3]);
     Index += 4;
+    return temp;
+}
+
+uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data)
+{
+    uint32_t temp = (static_cast<uint32_t>(Data[0]) << 24) |
+                    (static_cast<uint8_t>(Data[1]) << 16) |
+                    (static_cast<uint8_t>(Data[2]) << 8) |
+                    static_cast<uint8_t>(Data[3]);
     return temp;
 }
 

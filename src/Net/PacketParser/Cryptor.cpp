@@ -1,5 +1,5 @@
 #include "Cryptor.h"
-#include "src/Common/Log.h"
+#include "Src/Common/Log.h"
 
 std::vector<uint8_t> Cryptor::Key;
 

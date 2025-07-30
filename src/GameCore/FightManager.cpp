@@ -1,6 +1,6 @@
 #include "FightManager.h"
-#include "src/Net/PacketParser/Packet.h"
-#include "src/Common/Log.h"
+#include "Src/Net/PacketParser/Packet.h"
+#include "Src/Common/Log.h"
 #include "SkillManager.h"
 #include "PetManager.h"
 
@@ -132,7 +132,6 @@ void PetFightManager::OnNoteUseSkill(const PacketData &Data)
             ShowChangePetInfo(userId);
             bIsChangePet = false;
             ChangePetData = PacketData();
-            continue;
         }
 
         Log::WriteBattleLog("[UseSkill]\n用户 " + std::to_string(userId), false);
@@ -174,7 +173,10 @@ void PetFightManager::OnGetUserPerInfoByID(const PacketData &Data)
     {
         PetNames += (PetManager::GetPetName(Pet.id) + " ");
     }
-    Log::WriteBattleLog("[Match Success]\n对手当前精灵：" + PetNames);
+    Log::WriteBattleLog("[Match Success]\n" +
+                        std::string("对手ID：\n") +
+                        std::to_string(PlayerID_1) +
+                        "对手当前精灵：" + PetNames);
 }
 
 void PetFightManager::OnChangePet(const PacketData &Data)

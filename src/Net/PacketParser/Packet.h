@@ -45,6 +45,8 @@ public:
 public:
     static uint32_t ReadUnsignedInt(const vector<uint8_t> &Data, int &Index);
 
+    static uint32_t ReadUnsignedInt(const vector<uint8_t> &Data);
+
     static uint8_t ReadByte(const vector<uint8_t> &Data, int &Index);
 
 private:
