@@ -43,8 +43,9 @@ void PacketData::LogCout(bool bIsSend) const
     {
         oss << "Body=[";
         size_t toPrint = std::min<size_t>(Body.size(), 16); // 最多打印前16个字节
-        if (CmdID == 45144)
-            toPrint = Body.size();
+        // if (CmdID == 42399)
+        //     toPrint = Body.size();
+        // size_t toPrint = Body.size();
         for (size_t i = 0; i < toPrint; ++i)
         {
             oss << std::hex << std::setw(2) << std::setfill('0')
@@ -58,6 +59,8 @@ void PacketData::LogCout(bool bIsSend) const
     {
         Log::WriteLog("[Hooked send] Parsed Data:" + oss.str());
 
+        // if (CmdID == 2051) // GET_SIM_USERINFO
+        //     DispatcherManager::DispatchPacketEvent(CmdID, *this);
     }
     else
     {
@@ -72,7 +75,9 @@ void PacketData::LogCout(bool bIsSend) const
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 41635) // GET_USERPERINFO_BY_ID
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 45141)
+        if (CmdID == 45139)  // 用于获取对方ID
+            DispatcherManager::DispatchPacketEvent(CmdID, *this);
+        if (CmdID == 45141) // 用于获取对方ID，45139未获取则在45141当中。
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
     }
 }

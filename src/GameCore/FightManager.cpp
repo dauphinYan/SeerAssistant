@@ -174,9 +174,8 @@ void PetFightManager::OnGetUserPerInfoByID(const PacketData &Data)
         PetNames += (PetManager::GetPetName(Pet.id) + " ");
     }
     Log::WriteBattleLog("[Match Success]\n" +
-                        std::string("对手ID：\n") +
-                        std::to_string(PlayerID_1) +
-                        "对手当前精灵：" + PetNames);
+                        std::string("对手ID：") + std::to_string(PlayerID_1) +
+                        "\n对手当前精灵：" + PetNames);
 }
 
 void PetFightManager::OnChangePet(const PacketData &Data)

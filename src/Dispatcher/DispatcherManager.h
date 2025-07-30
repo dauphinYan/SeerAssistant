@@ -33,5 +33,12 @@ private:
 
     static void OnGetUserPerInfoByIDCmdReceived(const PacketData &Data);
 
+    static void OnGetSimUserInfoCmdReceived(const PacketData &Data);
+
+    static void On45139CmdReceived(const PacketData &Data);
+
     static void On45141CmdReceived(const PacketData &Data);
+
+private:
+    static bool bIsGetPlayer_1;
 };
