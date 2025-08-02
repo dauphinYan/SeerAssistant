@@ -12,7 +12,7 @@
 
 - `SocketHook.dll`仅用作捕获网络通信中的数据包。
 
-- `Injector.exe`为主程序。
+- `Start.cpp`为程序入口。
 
 - `Log/System`目录下存放程序运行时日志，日志等级分为`Temp`与`Error`两种。
   
@@ -22,19 +22,14 @@
 
 #### 编译 `SocketHook.dll`
 
-详见 [SeerHook](https://github.com/dauphinYan/SeerHook)，并将编译后的`SocketHook.dll`放入当前根目录中。
+详见 [SeerHook](https://github.com/dauphinYan/SeerHook)。
 
-#### 运行`Injector.cpp`
+#### 使用CMake构建项目
 
-运行`Injector.cpp`（主程序），注意修改`targetExePath`为游戏启动路径。
-
-### 环境
-
-| 环境项   | 说明               |
-| :------- | ------------------ |
-| 操作系统 | Windows 11         |
-| 编辑器   | Visual Studio Code |
-| 编译器   | MinGW-w64          |
+1. 修改`Src/Start.cpp`中`GamePath`为游戏启动路径。
+2. 使用`CMake`进行项目构建。
+3. 构建完成后，将`Config`文件夹放入`SeerAssistant.exe`所在的目录。
+4. 将前面编译得到的`SocketHook.dll`放入`SeerAssistant.exe`所在的目录中。
 
 ### 声明
 
