@@ -117,7 +117,7 @@ void Log::InitBattleLogPath(char *InBattleLogPath)
     if (!ofs.is_open())
         return;
 
-    ofs << "BattaleLog is created." << "\n\n";
+    ofs << "战斗日志创建完毕！" << "\n\n";
 }
 
 void Log::WriteBattleLog(const std::string &msg, bool bShouldWrite)

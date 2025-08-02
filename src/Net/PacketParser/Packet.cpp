@@ -19,6 +19,18 @@ bool PacketProcessor::s_HaveLogin = false;
 size_t PacketProcessor::s_SN = 0;
 int32_t PacketProcessor::s_UserID = 0;
 
+/*
+3405:
+40002:
+41080:
+46046:
+4047:
+1002:
+41228:
+2441: LOAD_PERCENT
+9908: 未知 in unity
+*/
+
 unordered_set<int32_t> PacketProcessor::FilterCmd = {3405, 40002, 41080, 46046, 4047, 1002, 41228};
 
 void PacketData::LogCout(bool bIsSend) const
