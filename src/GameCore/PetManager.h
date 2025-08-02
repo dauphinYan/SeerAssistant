@@ -15,7 +15,7 @@ struct MoveSkill
     uint32_t pp;
 };
 
-struct EOtherPeoplePetInfo
+struct UOtherPeoplePetInfo
 {
     uint32_t catchTime; // 捕获时间
     uint32_t useflag;   // 使用标志
@@ -48,7 +48,7 @@ struct EOtherPeoplePetInfo
 class PetManager
 {
 public:
-    static EOtherPeoplePetInfo GetOtherPeoplePetInfo(const PacketData &Data, int &Offset);
+    static UOtherPeoplePetInfo GetOtherPeoplePetInfo(const PacketData &Data, int &Offset);
 
 public:
     static std::string GetPetName(const uint32_t &PetID);
@@ -60,3 +60,5 @@ private:
 
     static std::once_flag initFlag;
 };
+
+// http://seerh5.61.com/resource/assets/pet/head/1.png 精灵头像下载。

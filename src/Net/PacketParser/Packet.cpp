@@ -87,7 +87,7 @@ void PacketData::LogCout(bool bIsSend) const
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 41635) // GET_USERPERINFO_BY_ID
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 45139)  // 用于获取对方ID
+        if (CmdID == 45139) // 用于获取对方ID
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
         if (CmdID == 45141) // 用于获取对方ID，45139未获取则在45141当中。
             DispatcherManager::DispatchPacketEvent(CmdID, *this);
@@ -343,17 +343,21 @@ uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data, int &Inde
     return temp;
 }
 
-uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data)
-{
-    uint32_t temp = (static_cast<uint32_t>(Data[0]) << 24) |
-                    (static_cast<uint8_t>(Data[1]) << 16) |
-                    (static_cast<uint8_t>(Data[2]) << 8) |
-                    static_cast<uint8_t>(Data[3]);
-    return temp;
-}
-
 uint8_t PacketProcessor::ReadByte(const vector<uint8_t> &Data, int &Index)
 {
     uint8_t temp = static_cast<uint8_t>(Data[Index++]);
     return temp;
+}
+
+std::string PacketProcessor::ReadUTFBytes(const std::vector<uint8_t> &Data, int &Index, size_t Length)
+{
+    std::string Result;
+    Result.reserve(Length);
+
+    for (size_t i = 0; i < Length && Index < Data.size(); ++i)
+    {
+        Result.push_back(static_cast<char>(Data[Index++]));
+    }
+
+    return Result;
 }
