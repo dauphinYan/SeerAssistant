@@ -11,7 +11,7 @@ struct PacketHeader
     uint8_t direction; // 0 = recv, 1 = send
 };
 
-enum class EClientType;
+enum class ClientType;
 
 class Injector
 {
@@ -21,12 +21,12 @@ public:
     void StartInjector();
 
 private:
-    bool InjectDll(DWORD Pid, const std::string &DllPath, EClientType ClientType);
+    bool InjectDll(DWORD pid, const std::string &dllPath, ClientType clientType);
 
     void PipeServerLoop();
 
 private:
     static const wchar_t *PIPE_NAME;
 
-    EClientType ClientType;
+    ClientType clientType;
 };

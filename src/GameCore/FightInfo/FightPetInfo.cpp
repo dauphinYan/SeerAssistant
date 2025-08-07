@@ -1,76 +1,76 @@
 #include "FightPetInfo.h"
 #include "Src/GameCore/PetInfo/PetResistanceInfo.h"
 
-FightPetInfo::FightPetInfo(const PacketData &Data, int &Offset)
+FightPetInfo::FightPetInfo(const PacketData &data, int &offset)
 {
-    UserID = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    PetID = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    PetName = PacketProcessor::ReadUTFBytes(Data.Body, Offset, 16);
-    CatchTime = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    Hp = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    MaxHP = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    Lv = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    CatchType = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
+    userID = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    petId = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    petName = PacketProcessor::ReadUTFBytes(data.body, offset, 16);
+    catchTime = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    hp = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    maxHp = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    Lv = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    catchType = PacketProcessor::ReadUnsignedInt(data.body, offset);
 
-    if (Hp > static_cast<int32_t>(MaxHP))
+    if (hp > static_cast<int32_t>(maxHp))
     {
-        MaxHP = static_cast<uint32_t>(Hp);
+        maxHp = static_cast<uint32_t>(hp);
     }
 
-    ResistenceInfo = new PetResistanceInfo(Data, Offset);
-    delete ResistenceInfo;
+    resistenceInfo = new PetResistanceInfo(data, offset);
+    delete resistenceInfo;
 
-    SkinId = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
+    skinId = PacketProcessor::ReadUnsignedInt(data.body, offset);
 
-    uint32_t ChangeCount = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
+    uint32_t ChangeCount = PacketProcessor::ReadUnsignedInt(data.body, offset);
     for (uint32_t i = 0; i < ChangeCount; ++i)
     {
         UChangeHpInfo info;
-        info.Id = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        info.Hp = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        info.MaxHp = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        info.Lock = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        info.ChujueNumber = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        info.ChujueRound = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        ChangeHps.push_back(info);
+        info.id = PacketProcessor::ReadUnsignedInt(data.body, offset);
+        info.hp = PacketProcessor::ReadUnsignedInt(data.body, offset);
+        info.maxHp = PacketProcessor::ReadUnsignedInt(data.body, offset);
+        info.lock = PacketProcessor::ReadUnsignedInt(data.body, offset);
+        info.chujueNumber = PacketProcessor::ReadUnsignedInt(data.body, offset);
+        info.chujueRound = PacketProcessor::ReadUnsignedInt(data.body, offset);
+        changeHps.push_back(info);
 
-        int MarkBuffCnt = static_cast<uint32_t>(Data.Body[Offset++]);
-        Offset += 3 * MarkBuffCnt;
+        int MarkBuffCnt = static_cast<uint32_t>(data.body[offset++]);
+        offset += 3 * MarkBuffCnt;
     }
 
-    RequireSwitchCthTime = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
-    XinHp = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    XinMaxHp = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-    if (XinHp > XinMaxHp)
+    requireSwitchCthTime = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(data.body, offset));
+    xinHp = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    xinMaxHp = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    if (xinHp > xinMaxHp)
     {
-        XinMaxHp = XinHp;
+        xinMaxHp = xinHp;
     }
 
-    IsChangeFace = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
-    SecretLaw = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
+    isChangeFace = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(data.body, offset));
+    secretLaw = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(data.body, offset));
 
-    uint32_t runawayCount = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
+    uint32_t runawayCount = PacketProcessor::ReadUnsignedInt(data.body, offset);
     for (uint32_t i = 0; i < runawayCount; ++i)
     {
-        SkillRunawayMarks.push_back(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
+        skillRunawayMarks.push_back(PacketProcessor::ReadUnsignedInt(data.body, offset));
     }
 
-    HolyAndEvilThoughts = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
-    YearVip2022Shengjian = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
-    YearVip2022Chujue = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(Data.Body, Offset));
+    holyAndEvilThoughts = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(data.body, offset));
+    yearVip2022Shengjian = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(data.body, offset));
+    yearVip2022Chujue = static_cast<int32_t>(PacketProcessor::ReadUnsignedInt(data.body, offset));
 
-    Offset += 3 * 2; // siteBuffInfo、bothSiteBuffInfo
-    int markBuffCnt = PacketProcessor::ReadByte(Data.Body, Offset);
-    Offset += 3 * markBuffCnt;
+    offset += 3 * 2; // siteBuffInfo、bothSiteBuffInfo
+    int markBuffCnt = PacketProcessor::ReadByte(data.body, offset);
+    offset += 3 * markBuffCnt;
 
-    uint32_t signCount = PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
+    uint32_t signCount = PacketProcessor::ReadUnsignedInt(data.body, offset);
     for (uint32_t i = 0; i < signCount; ++i)
     {
-        PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
-        PacketProcessor::ReadUnsignedInt(Data.Body, Offset);
+        PacketProcessor::ReadUnsignedInt(data.body, offset);
+        PacketProcessor::ReadUnsignedInt(data.body, offset);
     }
 
-    Offset += 4 * 5; // lockedSkill
+    offset += 4 * 5; // lockedSkill
 
-    ChangeFaceValue = 0;
+    changeFaceValue = 0;
 }

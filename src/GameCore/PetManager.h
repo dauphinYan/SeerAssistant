@@ -48,15 +48,15 @@ struct UOtherPeoplePetInfo
 class PetManager
 {
 public:
-    static UOtherPeoplePetInfo GetOtherPeoplePetInfo(const PacketData &Data, int &Offset);
+    static UOtherPeoplePetInfo GetOtherPeoplePetInfo(const PacketData &data, int &offset);
 
 public:
-    static std::string GetPetName(const uint32_t &PetID);
+    static std::string GetPetName(const uint32_t &petId);
 
 private:
     static bool ReadPetBookData();
 
-    static std::unordered_map<uint32_t, std::string> PetNameMap;
+    static std::unordered_map<uint32_t, std::string> petNameMap;
 
     static std::once_flag initFlag;
 };

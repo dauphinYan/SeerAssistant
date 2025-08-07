@@ -27,8 +27,11 @@
 #### 使用CMake构建项目
 
 1. 修改`Src/Start.cpp`中`GamePath`为游戏启动路径。
+
 2. 使用`CMake`进行项目构建。
+   
 3. 构建完成后，将`Config`文件夹放入`SeerAssistant.exe`所在的目录。
+   
 4. 将前面编译得到的`SocketHook.dll`放入`SeerAssistant.exe`所在的目录中。
 
 ### 声明

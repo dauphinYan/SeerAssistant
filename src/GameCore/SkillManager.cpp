@@ -3,15 +3,15 @@
 
 #include <fstream>
 
-json SkillManager::PetSkills;
+json SkillManager::petSkills;
 std::once_flag SkillManager::initFlag;
 
-std::string SkillManager::GetSkillNameByID(uint32_t TargetID)
+std::string SkillManager::GetSkillNameByID(uint32_t targetId)
 {
-    if (TargetID == 0)
+    if (targetId == 0)
         return "未出手";
 
-    if (PetSkills.empty())
+    if (petSkills.empty())
     {
         std::call_once(initFlag, []()
                        {
@@ -19,7 +19,7 @@ std::string SkillManager::GetSkillNameByID(uint32_t TargetID)
                 Log::WriteLog("读取技能数据失败", LogLevel::Error); });
     }
 
-    for (const auto &skill : PetSkills)
+    for (const auto &skill : petSkills)
     {
         auto itID = skill.find("ID");
         if (itID == skill.end() || !itID->is_string())
@@ -36,7 +36,7 @@ std::string SkillManager::GetSkillNameByID(uint32_t TargetID)
             continue;
         }
 
-        if (id == TargetID)
+        if (id == targetId)
         {
             auto itName = skill.find("Name");
             if (itName != skill.end() && itName->is_string())
@@ -58,14 +58,14 @@ bool SkillManager::ReadPetSkillData()
 
     try
     {
-        inFile >> PetSkills;
+        inFile >> petSkills;
     }
     catch (const json::parse_error &e)
     {
         Log::WriteLog(
             std::string("解析 PetSkillData.json 时出错：") + e.what(),
             LogLevel::Error);
-        PetSkills.clear();
+        petSkills.clear();
         return false;
     }
 

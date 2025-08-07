@@ -7,23 +7,23 @@
 
 #include <iostream>
 
-std::unordered_map<uint32_t, std::vector<DispatcherManager::PacketEventHandler>> DispatcherManager::PacketEventHandlers;
+std::unordered_map<uint32_t, std::vector<DispatcherManager::PacketEventHandler>> DispatcherManager::packetEventHandlers;
 
 bool DispatcherManager::bIsGetPlayer_1 = false;
 
-void DispatcherManager::RegisterPacketEvent(int32_t CmdID, PacketEventHandler Handler)
+void DispatcherManager::RegisterPacketEvent(int32_t cmdId, PacketEventHandler Handler)
 {
-    PacketEventHandlers[CmdID].emplace_back(Handler);
+    packetEventHandlers[cmdId].emplace_back(Handler);
 }
 
-void DispatcherManager::DispatchPacketEvent(int32_t CmdID, const PacketData &Data)
+void DispatcherManager::DispatchPacketEvent(int32_t cmdId, const PacketData &data)
 {
-    auto it = PacketEventHandlers.find(CmdID);
-    if (it != PacketEventHandlers.end())
+    auto it = packetEventHandlers.find(cmdId);
+    if (it != packetEventHandlers.end())
     {
         for (const auto &Handler : it->second)
         {
-            Handler(Data);
+            Handler(data);
         }
     }
 }
@@ -40,53 +40,53 @@ void DispatcherManager::InitDispatcher()
     DispatcherManager::RegisterPacketEvent(45141, &DispatcherManager::On45141CmdReceived);
 }
 
-void DispatcherManager::OnNoteStartFightCmdReceived(const PacketData &Data)
+void DispatcherManager::OnNoteStartFightCmdReceived(const PacketData &data)
 {
-    PetFightManager::OnNoteStartFight(Data);
+    PetFightManager::OnNoteStartFight(data);
 }
 
-void DispatcherManager::OnFightOverCmdReceived(const PacketData &Data)
+void DispatcherManager::OnFightOverCmdReceived(const PacketData &data)
 {
-    PetFightManager::OnFightOver(Data);
+    PetFightManager::OnFightOver(data);
     bIsGetPlayer_1 = false;
 }
 
-void DispatcherManager::OnNoteUseSkillCmdReceived(const PacketData &Data)
+void DispatcherManager::OnNoteUseSkillCmdReceived(const PacketData &data)
 {
-    PetFightManager::OnNoteUseSkill(Data);
+    PetFightManager::OnNoteUseSkill(data);
 }
 
-void DispatcherManager::OnChangePetCmdReceived(const PacketData &Data)
+void DispatcherManager::OnChangePetCmdReceived(const PacketData &data)
 {
-    PetFightManager::OnChangePet(Data);
+    PetFightManager::OnChangePet(data);
 }
 
-void DispatcherManager::OnGetUserPerInfoByIDCmdReceived(const PacketData &Data)
+void DispatcherManager::OnGetUserPerInfoByIDCmdReceived(const PacketData &data)
 {
-    PetFightManager::OnGetUserPerInfoByID(Data);
+    PetFightManager::OnGetUserPerInfoByID(data);
 }
 
-void DispatcherManager::OnGetSimUserInfoCmdReceived(const PacketData &Data)
+void DispatcherManager::OnGetSimUserInfoCmdReceived(const PacketData &data)
 {
     int offset = 4;
-    PetFightManager::SetPlayerID_1(PacketProcessor::ReadUnsignedInt(Data.Body, offset));
+    PetFightManager::SetPlayerID_1(PacketProcessor::ReadUnsignedInt(data.body, offset));
 }
 
-void DispatcherManager::On45139CmdReceived(const PacketData &Data)
+void DispatcherManager::On45139CmdReceived(const PacketData &data)
 {
     int offset = 0;
-    uint32_t PlayerID_1 = PacketProcessor::ReadUnsignedInt(Data.Body, offset);
-    if (PlayerID_1 != 0)
+    uint32_t playerID_1 = PacketProcessor::ReadUnsignedInt(data.body, offset);
+    if (playerID_1 != 0)
     {
-        PetFightManager::SetPlayerID_1(PlayerID_1);
+        PetFightManager::SetPlayerID_1(playerID_1);
         bIsGetPlayer_1 = true;
     }
 }
 
-void DispatcherManager::On45141CmdReceived(const PacketData &Data)
+void DispatcherManager::On45141CmdReceived(const PacketData &data)
 {
     if (bIsGetPlayer_1)
         return;
     int offset = 4;
-    PetFightManager::SetPlayerID_1(PacketProcessor::ReadUnsignedInt(Data.Body, offset));
+    PetFightManager::SetPlayerID_1(PacketProcessor::ReadUnsignedInt(data.body, offset));
 }

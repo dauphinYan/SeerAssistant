@@ -11,39 +11,39 @@ public:
     PetResistanceInfo(const PacketData &Data, int &Offset);
 
 private:
-    static uint32_t GetBitValue(uint32_t Value, int StartBit, int BitLength)
+    static uint32_t GetBitValue(uint32_t value, int startBit, int bitLength)
     {
-        int shift = 32 - (StartBit + BitLength - 1);
-        return (Value >> shift) & ((1u << BitLength) - 1);
+        int shift = 32 - (startBit + bitLength - 1);
+        return (value >> shift) & ((1u << bitLength) - 1);
     }
 
 private:
     // 暴击相关
-    uint16_t Cirt = 0;
-    uint16_t CirtAdj = 0;
+    uint16_t cirt = 0;
+    uint16_t cirtAdj = 0;
 
     // 稳定性相关
-    uint16_t Regular = 0;
-    uint16_t RegularAdj = 0;
+    uint16_t regular = 0;
+    uint16_t regularAdj = 0;
 
     // 伤害减免相关
-    uint16_t Precent = 0;
-    uint16_t PrecentAdj = 0;
+    uint16_t precent = 0;
+    uint16_t precentAdj = 0;
 
     // 控制抗性数组
-    std::vector<uint8_t> CtlIdx;
-    std::vector<uint8_t> Ctl;
-    std::vector<uint8_t> CtlAdj;
+    std::vector<uint8_t> ctlIdx;
+    std::vector<uint8_t> ctl;
+    std::vector<uint8_t> ctlAdj;
 
     // 弱点抗性数组
-    std::vector<uint8_t> WeakIdx;
-    std::vector<uint8_t> Weak;
-    std::vector<uint8_t> WeakAdj;
+    std::vector<uint8_t> weakIdx;
+    std::vector<uint8_t> weak;
+    std::vector<uint8_t> weakAdj;
 
     // 其他抗性值
-    uint32_t ResistAll = 0;
-    uint32_t ResistState = 0;
-    uint32_t RedGem = 0;
-    uint32_t GreenGem = 0;
-    uint32_t Reserve = 0;
+    uint32_t resistAll = 0;
+    uint32_t resistState = 0;
+    uint32_t redGem = 0;
+    uint32_t greenGem = 0;
+    uint32_t reserve = 0;
 };

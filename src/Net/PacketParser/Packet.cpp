@@ -9,14 +9,14 @@
 #include <sstream>
 #include <iomanip>
 
-EClientType PacketProcessor::ClientType = EClientType::Flash;
+ClientType PacketProcessor::clientType = ClientType::Flash;
 
 vector<uint8_t> PacketProcessor::s_RecvBuf;
 size_t PacketProcessor::s_RecvBufIndex = 0;
 size_t PacketProcessor::s_RecvNum = 0;
 SOCKET PacketProcessor::s_CurrentSocket = INVALID_SOCKET;
 bool PacketProcessor::s_HaveLogin = false;
-size_t PacketProcessor::s_SN = 0;
+size_t PacketProcessor::s_Sn = 0;
 int32_t PacketProcessor::s_UserID = 0;
 
 /*
@@ -31,39 +31,39 @@ int32_t PacketProcessor::s_UserID = 0;
 9908: 未知 in unity
 */
 
-unordered_set<int32_t> PacketProcessor::FilterCmd = {3405, 40002, 41080, 46046, 4047, 1002, 41228};
+unordered_set<int32_t> PacketProcessor::filterCmd = {3405, 40002, 41080, 46046, 4047, 1002, 41228};
 
 void PacketData::LogCout(bool bIsSend) const
 {
-    if (PacketProcessor::FilterCmd.find(CmdID) != PacketProcessor::FilterCmd.end())
+    if (PacketProcessor::filterCmd.find(cmdId) != PacketProcessor::filterCmd.end())
     {
         return;
     }
 
     std::ostringstream oss;
 
-    oss << "[Length=" << Length
-        << " Version=" << static_cast<int>(Version)
-        << " CmdID=" << CmdID
-        << " Cmd=" << Command::GetCommandName(CmdID)
-        << " UserID=" << UserID
-        << " SN=" << SN
-        << " BodySize=" << Body.size()
+    oss << "[Length=" << length
+        << " Version=" << static_cast<int>(version)
+        << " CmdID=" << cmdId
+        << " Cmd=" << Command::GetCommandName(cmdId)
+        << " UserID=" << userID
+        << " SN=" << sn
+        << " BodySize=" << body.size()
         << "] ";
 
-    if (!Body.empty())
+    if (!body.empty())
     {
         oss << "Body=[";
-        size_t toPrint = std::min<size_t>(Body.size(), 16); // 最多打印前16个字节
+        size_t toPrint = std::min<size_t>(body.size(), 16); // 最多打印前16个字节
         // if (CmdID == 42399)
-        //     toPrint = Body.size();
-        // size_t toPrint = Body.size();
+        //     toPrint = body.size();
+        // size_t toPrint = body.size();
         for (size_t i = 0; i < toPrint; ++i)
         {
             oss << std::hex << std::setw(2) << std::setfill('0')
-                << static_cast<int>(Body[i]) << " ";
+                << static_cast<int>(body[i]) << " ";
         }
-        if (Body.size() > toPrint)
+        if (body.size() > toPrint)
             oss << "...";
         oss << "]" << std::dec;
     }
@@ -77,63 +77,63 @@ void PacketData::LogCout(bool bIsSend) const
     else
     {
         Log::WriteLog("[Hooked recv] Parsed Data:" + oss.str());
-        if (CmdID == 2504)
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 2505)
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 2506)
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 2407)
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 41635) // GET_USERPERINFO_BY_ID
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 45139) // 用于获取对方ID
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
-        if (CmdID == 45141) // 用于获取对方ID，45139未获取则在45141当中。
-            DispatcherManager::DispatchPacketEvent(CmdID, *this);
+        if (cmdId == 2504)
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
+        if (cmdId == 2505)
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
+        if (cmdId == 2506)
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
+        if (cmdId == 2407)
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
+        if (cmdId == 41635) // GET_USERPERINFO_BY_ID
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
+        if (cmdId == 45139) // 用于获取对方ID
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
+        if (cmdId == 45141) // 用于获取对方ID，45139未获取则在45141当中。
+            DispatcherManager::DispatchPacketEvent(cmdId, *this);
     }
 }
 
-void PacketProcessor::SetClientType(EClientType InClientType)
+void PacketProcessor::SetClientType(ClientType inClientType)
 {
-    ClientType = InClientType;
+    clientType = inClientType;
 }
 
-void PacketProcessor::ProcessSendPacket(SOCKET Socket, const vector<char> &Data, int Length)
+void PacketProcessor::ProcessSendPacket(SOCKET socket, const vector<char> &data, int length)
 {
-    if (!(Data[0] == 0x00 && Data[1] == 0x00))
+    if (!(data[0] == 0x00 && data[1] == 0x00))
         return;
 
-    vector<uint8_t> Cipher(Data.begin(), Data.end());
+    vector<uint8_t> cipher(data.begin(), data.end());
 
-    PacketData SendPacketData = PacketData();
+    PacketData sendPacketData = PacketData();
 
     if (!s_HaveLogin)
     {
-        s_CurrentSocket = Socket;
+        s_CurrentSocket = socket;
     }
 
-    vector<uint8_t> Plain = ShouldDecrypt(Cipher) ? DecryptPacket(Cipher) : Cipher;
+    vector<uint8_t> plain = ShouldDecrypt(cipher) ? DecryptPacket(cipher) : cipher;
 
-    SendPacketData = ParsePacket(Plain);
-    SendPacketData.LogCout(true);
+    sendPacketData = ParsePacket(plain);
+    sendPacketData.LogCout(true);
 
     if (s_HaveLogin)
     {
-        ++SendPacketData.SN;
+        ++sendPacketData.sn;
     }
 }
 
-void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data, int Length)
+void PacketProcessor::ProcessRecvPacket(SOCKET socket, const vector<char> &data, int length)
 {
-    PacketData RecvPacketData = PacketData();
+    PacketData recvPacketData = PacketData();
 
-    s_RecvBuf.insert(s_RecvBuf.end(), Data.begin(), Data.begin() + Length);
+    s_RecvBuf.insert(s_RecvBuf.end(), data.begin(), data.begin() + length);
 
     // 是否是同一连接。
-    if (s_CurrentSocket != Socket)
+    if (s_CurrentSocket != socket)
     {
-        s_RecvBufIndex += Length;
+        s_RecvBufIndex += length;
 
         // 此时索引等于缓冲区长度，则说明刚好取完此包。
         if (s_RecvBufIndex == s_RecvBuf.size())
@@ -147,41 +147,41 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
 
     while (true)
     {
-        size_t Remain = s_RecvBuf.size() - s_RecvBufIndex;
+        size_t remain = s_RecvBuf.size() - s_RecvBufIndex;
 
         // 不足包头长度，需等待。
-        if (Remain < sizeof(uint32_t))
+        if (remain < sizeof(uint32_t))
             break;
 
         // 读包。
-        uint32_t PacketLength = 0;
-        memcpy(&PacketLength, &s_RecvBuf[s_RecvBufIndex], sizeof(PacketLength));
-        PacketLength = ntohl(PacketLength);
+        uint32_t packetLength = 0;
+        memcpy(&packetLength, &s_RecvBuf[s_RecvBufIndex], sizeof(packetLength));
+        packetLength = ntohl(packetLength);
 
         // 包未齐，需等待。
-        if (Remain < PacketLength)
+        if (remain < packetLength)
             break;
 
-        vector<uint8_t> Cipher(s_RecvBuf.begin() + s_RecvBufIndex, s_RecvBuf.begin() + s_RecvBufIndex + PacketLength);
+        vector<uint8_t> cipher(s_RecvBuf.begin() + s_RecvBufIndex, s_RecvBuf.begin() + s_RecvBufIndex + packetLength);
 
-        vector<uint8_t> Plain = ShouldDecrypt(Cipher) ? DecryptPacket(Cipher) : Cipher;
+        vector<uint8_t> plain = ShouldDecrypt(cipher) ? DecryptPacket(cipher) : cipher;
 
-        RecvPacketData = ParsePacket(Plain);
+        recvPacketData = ParsePacket(plain);
         ++s_RecvNum;
-        RecvPacketData.LogCout(false);
+        recvPacketData.LogCout(false);
 
         // 如果是登录包
-        if (RecvPacketData.CmdID == 1001)
+        if (recvPacketData.cmdId == 1001)
         {
-            Logining(RecvPacketData);
-            s_CurrentSocket = Socket;
-            s_SN = RecvPacketData.SN;
-            s_UserID = RecvPacketData.UserID;
+            Logining(recvPacketData);
+            s_CurrentSocket = socket;
+            s_Sn = recvPacketData.sn;
+            s_UserID = recvPacketData.userID;
             s_HaveLogin = true;
             PetFightManager::SetPlayerID_0(s_UserID);
         }
 
-        s_RecvBufIndex += PacketLength;
+        s_RecvBufIndex += packetLength;
 
         if (s_RecvBufIndex == s_RecvBuf.size())
         {
@@ -194,74 +194,74 @@ void PacketProcessor::ProcessRecvPacket(SOCKET Socket, const vector<char> &Data,
         {
             s_RecvBuf.erase(s_RecvBuf.begin(), s_RecvBuf.begin() + s_RecvBufIndex);
             s_RecvBufIndex = 0;
-            // s_CurrentSocket = Socket;
+            // s_CurrentSocket = socket;
         }
     }
 }
 
-PacketData PacketProcessor::ParsePacket(const std::vector<uint8_t> &Packet)
+PacketData PacketProcessor::ParsePacket(const std::vector<uint8_t> &packet)
 {
     PacketData res;
 
-    if (Packet.size() < 17)
+    if (packet.size() < 17)
     {
         return res;
     }
 
-    size_t Offset = 0;
+    size_t offset = 0;
 
     // 1. 包长（4字节）
-    int32_t NetLen;
-    memcpy(&NetLen, Packet.data() + Offset, sizeof(NetLen));
-    res.Length = ntohl(NetLen);
-    Offset += 4;
+    int32_t netLen;
+    memcpy(&netLen, packet.data() + offset, sizeof(netLen));
+    res.length = ntohl(netLen);
+    offset += 4;
 
     // 2. 版本号（1字节）
-    res.Version = Packet[Offset++];
+    res.version = packet[offset++];
 
     // 3. 命令号（4 字节）
-    int32_t NetCmd;
-    memcpy(&NetCmd, Packet.data() + Offset, sizeof(NetCmd));
-    res.CmdID = ntohl(NetCmd);
-    Offset += 4;
+    int32_t netCmd;
+    memcpy(&netCmd, packet.data() + offset, sizeof(netCmd));
+    res.cmdId = ntohl(netCmd);
+    offset += 4;
 
     // 4. 用户 ID（4 字节）
-    int32_t NetUser;
-    memcpy(&NetUser, Packet.data() + Offset, sizeof(NetUser));
-    res.UserID = ntohl(NetUser);
-    Offset += 4;
+    int32_t netUser;
+    memcpy(&netUser, packet.data() + offset, sizeof(netUser));
+    res.userID = ntohl(netUser);
+    offset += 4;
 
     // 5. 结果/序列号（4 字节）
-    int32_t NetRes;
-    memcpy(&NetRes, Packet.data() + Offset, sizeof(NetRes));
-    res.SN = ntohl(NetRes);
-    Offset += 4;
+    int32_t netRes;
+    memcpy(&netRes, packet.data() + offset, sizeof(netRes));
+    res.sn = ntohl(netRes);
+    offset += 4;
 
     // 6. 包体
-    if (res.Length > static_cast<int>(Offset))
+    if (res.length > static_cast<int>(offset))
     {
-        res.Body.assign(
-            Packet.begin() + Offset,
-            Packet.begin() + std::min<size_t>(Packet.size(), res.Length));
+        res.body.assign(
+            packet.begin() + offset,
+            packet.begin() + std::min<size_t>(packet.size(), res.length));
     }
 
     return res;
 }
 
-bool PacketProcessor::ShouldDecrypt(const std::vector<uint8_t> &Cipher)
+bool PacketProcessor::ShouldDecrypt(const std::vector<uint8_t> &cipher)
 {
-    if (ClientType == EClientType::Unity)
+    if (clientType == ClientType::Unity)
         return false;
 
-    if (Cipher.size() < 8)
+    if (cipher.size() < 8)
     {
         return true;
     }
 
-    uint32_t temp = (static_cast<uint32_t>(Cipher[4]) << 24) |
-                    (static_cast<uint8_t>(Cipher[5]) << 16) |
-                    (static_cast<uint8_t>(Cipher[6]) << 8) |
-                    static_cast<uint8_t>(Cipher[7]);
+    uint32_t temp = (static_cast<uint32_t>(cipher[4]) << 24) |
+                    (static_cast<uint8_t>(cipher[5]) << 16) |
+                    (static_cast<uint8_t>(cipher[6]) << 8) |
+                    static_cast<uint8_t>(cipher[7]);
 
     if (temp == 0x31000000 || temp == 0x00000000)
     {
@@ -281,41 +281,41 @@ std::vector<uint8_t> GetLenthHex(int32_t v)
     return b;
 }
 
-vector<uint8_t> PacketProcessor::DecryptPacket(const vector<uint8_t> &Cipher)
+vector<uint8_t> PacketProcessor::DecryptPacket(const vector<uint8_t> &cipher)
 {
     // 从前4字节取出密文总长度。
-    int32_t NetCipherLen = 0;
-    memcpy(&NetCipherLen, Cipher.data(), sizeof(NetCipherLen));
-    int32_t CipherLen = ntohl(NetCipherLen); // 大端转小端。
+    int32_t netCipherLen = 0;
+    memcpy(&netCipherLen, cipher.data(), sizeof(netCipherLen));
+    int32_t cipherLen = ntohl(netCipherLen); // 大端转小端。
 
     // 因加密算法，明文长度 = 密文长度 - 1。
-    vector<uint8_t> PlainLeHex = GetLenthHex(CipherLen - 1); // 小端转大端
-    vector<uint8_t> CipherBody(Cipher.begin() + 4, Cipher.end());
+    vector<uint8_t> plainLeHex = GetLenthHex(cipherLen - 1); // 小端转大端
+    vector<uint8_t> cipherBody(cipher.begin() + 4, cipher.end());
 
-    vector<uint8_t> Decrypted = Cryptor::Decrypt(CipherBody);
+    vector<uint8_t> decrypted = Cryptor::Decrypt(cipherBody);
 
-    vector<uint8_t> Plain;
-    Plain.resize(4);
-    memcpy(Plain.data(), PlainLeHex.data(), PlainLeHex.size());
+    vector<uint8_t> plain;
+    plain.resize(4);
+    memcpy(plain.data(), plainLeHex.data(), plainLeHex.size());
 
-    Plain.insert(Plain.end(), Decrypted.begin(), Decrypted.end());
+    plain.insert(plain.end(), decrypted.begin(), decrypted.end());
 
-    return Plain;
+    return plain;
 }
 
-void PacketProcessor::Logining(PacketData &InPacketData)
+void PacketProcessor::Logining(PacketData &inPacketData)
 {
-    if (InPacketData.Body.size() < 4)
+    if (inPacketData.body.size() < 4)
     {
         return;
     }
 
     // 1. 取尾 4 字节并按“大端”组装
-    size_t n = InPacketData.Body.size();
-    uint32_t tail4 = (static_cast<uint32_t>(InPacketData.Body[n - 1])) | (static_cast<uint32_t>(InPacketData.Body[n - 2]) << 8) | (static_cast<uint32_t>(InPacketData.Body[n - 3]) << 16) | (static_cast<uint32_t>(InPacketData.Body[n - 4]) << 24);
+    size_t n = inPacketData.body.size();
+    uint32_t tail4 = (static_cast<uint32_t>(inPacketData.body[n - 1])) | (static_cast<uint32_t>(inPacketData.body[n - 2]) << 8) | (static_cast<uint32_t>(inPacketData.body[n - 3]) << 16) | (static_cast<uint32_t>(inPacketData.body[n - 4]) << 24);
 
     // 2. 异或 userId
-    uint32_t xorRes = tail4 ^ static_cast<uint32_t>(InPacketData.UserID);
+    uint32_t xorRes = tail4 ^ static_cast<uint32_t>(inPacketData.userID);
 
     // 3. 转为字符串
     std::string plain = std::to_string(xorRes);
@@ -333,31 +333,31 @@ void PacketProcessor::Logining(PacketData &InPacketData)
     Cryptor::InitKey(key);
 }
 
-uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &Data, int &Index)
+uint32_t PacketProcessor::ReadUnsignedInt(const vector<uint8_t> &data, int &index)
 {
-    uint32_t temp = (static_cast<uint32_t>(Data[Index]) << 24) |
-                    (static_cast<uint8_t>(Data[Index + 1]) << 16) |
-                    (static_cast<uint8_t>(Data[Index + 2]) << 8) |
-                    static_cast<uint8_t>(Data[Index + 3]);
-    Index += 4;
+    uint32_t temp = (static_cast<uint32_t>(data[index]) << 24) |
+                    (static_cast<uint8_t>(data[index + 1]) << 16) |
+                    (static_cast<uint8_t>(data[index + 2]) << 8) |
+                    static_cast<uint8_t>(data[index + 3]);
+    index += 4;
     return temp;
 }
 
-uint8_t PacketProcessor::ReadByte(const vector<uint8_t> &Data, int &Index)
+uint8_t PacketProcessor::ReadByte(const vector<uint8_t> &data, int &index)
 {
-    uint8_t temp = static_cast<uint8_t>(Data[Index++]);
+    uint8_t temp = static_cast<uint8_t>(data[index++]);
     return temp;
 }
 
-std::string PacketProcessor::ReadUTFBytes(const std::vector<uint8_t> &Data, int &Index, size_t Length)
+std::string PacketProcessor::ReadUTFBytes(const std::vector<uint8_t> &data, int &index, size_t length)
 {
-    std::string Result;
-    Result.reserve(Length);
+    std::string result;
+    result.reserve(length);
 
-    for (size_t i = 0; i < Length && Index < Data.size(); ++i)
+    for (size_t i = 0; i < length && index < data.size(); ++i)
     {
-        Result.push_back(static_cast<char>(Data[Index++]));
+        result.push_back(static_cast<char>(data[index++]));
     }
 
-    return Result;
+    return result;
 }

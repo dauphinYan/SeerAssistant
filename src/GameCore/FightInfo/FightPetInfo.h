@@ -4,12 +4,12 @@
 
 struct UChangeHpInfo
 {
-    uint32_t Id;
-    uint32_t Hp;
-    uint32_t MaxHp;
-    uint32_t Lock;
-    uint32_t ChujueNumber;
-    uint32_t ChujueRound;
+    uint32_t id;
+    uint32_t hp;
+    uint32_t maxHp;
+    uint32_t lock;
+    uint32_t chujueNumber;
+    uint32_t chujueRound;
 };
 
 class PetResistanceInfo;
@@ -17,29 +17,29 @@ class PetResistanceInfo;
 class FightPetInfo
 {
 public:
-    FightPetInfo(const PacketData &Data, int &Offset);
+    FightPetInfo(const PacketData &data, int &offset);
 
 public:
-    uint32_t UserID;
-    uint32_t PetID;
-    std::string PetName;
-    uint32_t CatchTime;
-    int32_t Hp;
-    uint32_t MaxHP;
+    uint32_t userID;
+    uint32_t petId;
+    std::string petName;
+    uint32_t catchTime;
+    int32_t hp;
+    uint32_t maxHp;
     uint32_t Lv;
-    PetResistanceInfo* ResistenceInfo;
-    uint32_t SkinId;
-    uint32_t CatchType;
-    std::vector<UChangeHpInfo> ChangeHps;
-    int32_t RequireSwitchCthTime;
-    uint32_t XinHp;
-    uint32_t XinMaxHp;
-    int32_t IsChangeFace;
-    int32_t SecretLaw;
-    std::vector<uint32_t> SkillRunawayMarks;
-    int32_t HolyAndEvilThoughts;
-    int32_t YearVip2022Shengjian;
-    int32_t YearVip2022Chujue;
+    PetResistanceInfo* resistenceInfo;
+    uint32_t skinId;
+    uint32_t catchType;
+    std::vector<UChangeHpInfo> changeHps;
+    int32_t requireSwitchCthTime;
+    uint32_t xinHp;
+    uint32_t xinMaxHp;
+    int32_t isChangeFace;
+    int32_t secretLaw;
+    std::vector<uint32_t> skillRunawayMarks;
+    int32_t holyAndEvilThoughts;
+    int32_t yearVip2022Shengjian;
+    int32_t yearVip2022Chujue;
 
-    int32_t ChangeFaceValue = 0;
+    int32_t changeFaceValue = 0;
 };

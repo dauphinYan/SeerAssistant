@@ -25,181 +25,181 @@ Injector::Injector()
     Log::InitBattleLogPath(Buffer);
     Cryptor::InitKey("!crAckmE4nOthIng:-)");
     DispatcherManager::InitDispatcher();
-    ClientType = EClientType::Flash;
-    PacketProcessor::SetClientType(ClientType);
+    clientType = ClientType::Flash;
+    PacketProcessor::SetClientType(clientType);
 }
 
 void Injector::StartInjector()
 {
-    std::thread PipeServer([this]
+    std::thread pipeServer([this]
                            { this->PipeServerLoop(); });
 
-    std::string GamePath = (ClientType == EClientType::Flash)
+    std::string GamePath = (clientType == ClientType::Flash)
                                ? R"(C:\Users\58448\Desktop\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
                                : R"(D:\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
 
-    STARTUPINFOA StartInfo = {sizeof(StartInfo)};
-    PROCESS_INFORMATION ProcessInfo = {};
+    STARTUPINFOA startInfo = {sizeof(startInfo)};
+    PROCESS_INFORMATION processInfo = {};
     if (!CreateProcessA(GamePath.c_str(), nullptr, nullptr, nullptr,
-                        FALSE, CREATE_SUSPENDED, nullptr, nullptr, &StartInfo, &ProcessInfo))
+                        FALSE, CREATE_SUSPENDED, nullptr, nullptr, &startInfo, &processInfo))
     {
         Log::WriteLog("无法启动目标进程，错误:" + GetLastError(), LogLevel::Error);
         return;
     }
-    Log::WriteLog("目标 PID：" + ProcessInfo.dwProcessId);
+    Log::WriteLog("目标 PID：" + processInfo.dwProcessId);
 
     CHAR full[MAX_PATH] = {0};
     GetFullPathNameA("SocketHook.dll", MAX_PATH, full, nullptr);
-    std::string DllPath(full);
-    cout << DllPath << endl;
-    ResumeThread(ProcessInfo.hThread);
+    std::string dllPath(full);
+    cout << dllPath << endl;
+    ResumeThread(processInfo.hThread);
 
     Log::WriteLog("等待进程启动...");
-    WaitForInputIdle(ProcessInfo.hProcess, 15000);
+    WaitForInputIdle(processInfo.hProcess, 15000);
     Sleep(3000);
 
-    DWORD ExitCode;
-    if (GetExitCodeProcess(ProcessInfo.hProcess, &ExitCode) && ExitCode != STILL_ACTIVE)
+    DWORD exitCode;
+    if (GetExitCodeProcess(processInfo.hProcess, &exitCode) && exitCode != STILL_ACTIVE)
     {
-        Log::WriteLog("目标进程已退出，退出码: " + ExitCode, LogLevel::Temp);
+        Log::WriteLog("目标进程已退出，退出码: " + exitCode, LogLevel::Temp);
         return;
     }
 
     Log::WriteLog("开始注入DLL...");
-    if (!InjectDll(ProcessInfo.dwProcessId, DllPath, ClientType))
+    if (!InjectDll(processInfo.dwProcessId, dllPath, clientType))
     {
         Log::WriteLog("注入失败。", LogLevel::Error);
         return;
     }
 
-    PipeServer.join();
+    pipeServer.join();
 
-    CloseHandle(ProcessInfo.hThread);
-    CloseHandle(ProcessInfo.hProcess);
+    CloseHandle(processInfo.hThread);
+    CloseHandle(processInfo.hProcess);
 }
 
-bool Injector::InjectDll(DWORD Pid, const std::string &DllPath, EClientType ClientType)
+bool Injector::InjectDll(DWORD pid, const std::string &dllPath, ClientType clientType)
 {
-    HANDLE CurProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Pid);
-    if (!CurProcess)
+    HANDLE curProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    if (!curProcess)
     {
         Log::WriteLog("无法打开目标进程。", LogLevel::Error);
         return false;
     }
 
-    LPVOID RemotePath = VirtualAllocEx(CurProcess, nullptr, DllPath.size() + 1, MEM_COMMIT, PAGE_READWRITE);
-    if (!RemotePath)
+    LPVOID remotePath = VirtualAllocEx(curProcess, nullptr, dllPath.size() + 1, MEM_COMMIT, PAGE_READWRITE);
+    if (!remotePath)
     {
         Log::WriteLog("无法分配远程内存。", LogLevel::Error);
-        CloseHandle(CurProcess);
+        CloseHandle(curProcess);
         return false;
     }
 
-    bool bIsWriteProcessMemory = WriteProcessMemory(CurProcess, RemotePath, DllPath.c_str(), DllPath.size() + 1, nullptr);
+    bool bIsWriteProcessMemory = WriteProcessMemory(curProcess, remotePath, dllPath.c_str(), dllPath.size() + 1, nullptr);
     if (!bIsWriteProcessMemory)
     {
         Log::WriteLog("写入内存失败。", LogLevel::Error);
-        VirtualFreeEx(CurProcess, RemotePath, 0, MEM_RELEASE);
-        CloseHandle(CurProcess);
+        VirtualFreeEx(curProcess, remotePath, 0, MEM_RELEASE);
+        CloseHandle(curProcess);
         return false;
     }
 
-    LPTHREAD_START_ROUTINE LoadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
-    HANDLE SocketHookThread = CreateRemoteThread(CurProcess, nullptr, 0, LoadLibrary, RemotePath, 0, nullptr);
-    WaitForSingleObject(SocketHookThread, INFINITE);
-    CloseHandle(SocketHookThread);
-    VirtualFreeEx(CurProcess, RemotePath, 0, MEM_RELEASE);
+    LPTHREAD_START_ROUTINE loadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
+    HANDLE socketHookThread = CreateRemoteThread(curProcess, nullptr, 0, loadLibrary, remotePath, 0, nullptr);
+    WaitForSingleObject(socketHookThread, INFINITE);
+    CloseHandle(socketHookThread);
+    VirtualFreeEx(curProcess, remotePath, 0, MEM_RELEASE);
 
-    HMODULE Modules[1024];
-    DWORD BufferNeeded;
-    HMODULE RemoteModule = nullptr;
-    if (EnumProcessModules(CurProcess, Modules, sizeof(Modules), &BufferNeeded))
+    HMODULE modules[1024];
+    DWORD bufferNeeded;
+    HMODULE remoteModule = nullptr;
+    if (EnumProcessModules(curProcess, modules, sizeof(modules), &bufferNeeded))
     {
-        for (DWORD i = 0; i < BufferNeeded / sizeof(HMODULE); ++i)
+        for (DWORD i = 0; i < bufferNeeded / sizeof(HMODULE); ++i)
         {
-            CHAR ModName[MAX_PATH] = {0};
-            if (GetModuleBaseNameA(CurProcess, Modules[i], ModName, MAX_PATH))
+            CHAR modName[MAX_PATH] = {0};
+            if (GetModuleBaseNameA(curProcess, modules[i], modName, MAX_PATH))
             {
-                if (_stricmp(ModName, "SocketHook.dll") == 0)
+                if (_stricmp(modName, "SocketHook.dll") == 0)
                 {
-                    RemoteModule = Modules[i];
+                    remoteModule = modules[i];
                     break;
                 }
             }
         }
     }
 
-    if (!RemoteModule)
+    if (!remoteModule)
     {
         Log::WriteLog("未找到远程 SocketHook.dll。", LogLevel::Error);
-        CloseHandle(CurProcess);
+        CloseHandle(curProcess);
         return false;
     }
 
-    HMODULE LocalModule = ::LoadLibraryA(DllPath.c_str());
+    HMODULE localModule = ::LoadLibraryA(dllPath.c_str());
 
-    if (!LocalModule)
+    if (!localModule)
     {
         Log::WriteLog("本地加载 DLL 失败。", LogLevel::Error);
-        CloseHandle(CurProcess);
+        CloseHandle(curProcess);
         return false;
     }
 
-    FARPROC InitLocal = GetProcAddress(LocalModule, "InitHook_Thread");
-    if (!InitLocal)
+    FARPROC initLocal = GetProcAddress(localModule, "InitHook_Thread");
+    if (!initLocal)
     {
         Log::WriteLog("找不到 InitHook_Thread 方法。", LogLevel::Error);
-        FreeLibrary(LocalModule);
-        CloseHandle(CurProcess);
+        FreeLibrary(localModule);
+        CloseHandle(curProcess);
         return false;
     }
 
-    DWORD_PTR Offset = (DWORD_PTR)InitLocal - (DWORD_PTR)LocalModule;
-    FreeLibrary(LocalModule);
-    FARPROC InitRemote = (FARPROC)((DWORD_PTR)RemoteModule + Offset);
+    DWORD_PTR Offset = (DWORD_PTR)initLocal - (DWORD_PTR)localModule;
+    FreeLibrary(localModule);
+    FARPROC initRemote = (FARPROC)((DWORD_PTR)remoteModule + Offset);
 
-    LPVOID RemoteArg = VirtualAllocEx(CurProcess, nullptr, sizeof(EClientType), MEM_COMMIT, PAGE_READWRITE);
-    if (!RemoteArg)
+    LPVOID remoteArg = VirtualAllocEx(curProcess, nullptr, sizeof(ClientType), MEM_COMMIT, PAGE_READWRITE);
+    if (!remoteArg)
     {
         Log::WriteLog("无法分配参数内存。", LogLevel::Error);
-        CloseHandle(CurProcess);
+        CloseHandle(curProcess);
         return false;
     }
-    if (!WriteProcessMemory(CurProcess, RemoteArg, &ClientType, sizeof(EClientType), nullptr))
+    if (!WriteProcessMemory(curProcess, remoteArg, &clientType, sizeof(ClientType), nullptr))
     {
         Log::WriteLog("写入参数失败。", LogLevel::Error);
-        VirtualFreeEx(CurProcess, RemoteArg, 0, MEM_RELEASE);
-        CloseHandle(CurProcess);
+        VirtualFreeEx(curProcess, remoteArg, 0, MEM_RELEASE);
+        CloseHandle(curProcess);
         return false;
     }
 
-    HANDLE InitThread = CreateRemoteThread(
-        CurProcess,
+    HANDLE initThread = CreateRemoteThread(
+        curProcess,
         nullptr,
         0,
-        (LPTHREAD_START_ROUTINE)InitRemote,
-        RemoteArg,
+        (LPTHREAD_START_ROUTINE)initRemote,
+        remoteArg,
         0,
         nullptr);
-    if (!InitThread)
+    if (!initThread)
     {
         Log::WriteLog("CreateRemoteThread 失败，错误码:" + GetLastError(), LogLevel::Error);
-        VirtualFreeEx(CurProcess, RemoteArg, 0, MEM_RELEASE);
-        CloseHandle(CurProcess);
+        VirtualFreeEx(curProcess, remoteArg, 0, MEM_RELEASE);
+        CloseHandle(curProcess);
         return false;
     }
-    WaitForSingleObject(InitThread, INFINITE);
-    CloseHandle(InitThread);
-    VirtualFreeEx(CurProcess, RemoteArg, 0, MEM_RELEASE);
+    WaitForSingleObject(initThread, INFINITE);
+    CloseHandle(initThread);
+    VirtualFreeEx(curProcess, remoteArg, 0, MEM_RELEASE);
 
     Log::WriteLog("DLL 注入并初始化成功！");
-    CloseHandle(CurProcess);
+    CloseHandle(curProcess);
     return true;
 }
 
 void Injector::PipeServerLoop()
 {
-    HANDLE Pipe = CreateNamedPipeW(
+    HANDLE pipe = CreateNamedPipeW(
         PIPE_NAME,
         PIPE_ACCESS_INBOUND,
         PIPE_TYPE_MESSAGE |
@@ -208,7 +208,7 @@ void Injector::PipeServerLoop()
         1,
         0, 0,
         0, nullptr);
-    if (Pipe == INVALID_HANDLE_VALUE)
+    if (pipe == INVALID_HANDLE_VALUE)
     {
         Log::WriteLog("创建管道名失败，错误码：" + std::to_string(GetLastError()), LogLevel::Error);
         return;
@@ -216,43 +216,43 @@ void Injector::PipeServerLoop()
 
     Log::WriteLog("等待 SocketHook.dll 连接到管道...");
 
-    if (!ConnectNamedPipe(Pipe, nullptr) && GetLastError() != ERROR_PIPE_CONNECTED)
+    if (!ConnectNamedPipe(pipe, nullptr) && GetLastError() != ERROR_PIPE_CONNECTED)
     {
         Log::WriteLog("连接管道名失败，错误码：" + std::to_string(GetLastError()), LogLevel::Error);
-        CloseHandle(Pipe);
+        CloseHandle(pipe);
         return;
     }
 
     while (true)
     {
-        PacketHeader Header;
+        PacketHeader header;
         DWORD bytesRead = 0;
-        if (!ReadFile(Pipe, &Header, sizeof(Header), &bytesRead, nullptr) || bytesRead == 0)
+        if (!ReadFile(pipe, &header, sizeof(header), &bytesRead, nullptr) || bytesRead == 0)
             break;
 
-        std::vector<char> payload(Header.payloadSize);
-        if (!ReadFile(Pipe, payload.data(), Header.payloadSize, &bytesRead, nullptr))
+        std::vector<char> payload(header.payloadSize);
+        if (!ReadFile(pipe, payload.data(), header.payloadSize, &bytesRead, nullptr))
             break;
 
-        std::string dirStr = (Header.direction == 0) ? "Recv" : "Send";
+        std::string dirStr = (header.direction == 0) ? "Recv" : "Send";
 
         std::ostringstream oss;
-        for (int i = 0; i < Header.payloadSize; ++i)
+        for (int i = 0; i < header.payloadSize; ++i)
             oss << std::hex << std::setw(2) << std::setfill('0')
                 << (unsigned int)(unsigned char)payload[i] << " ";
 
-        if (Header.direction == 0)
+        if (header.direction == 0)
         {
-            PacketProcessor::ProcessRecvPacket(Header.socket, payload, Header.payloadSize);
+            PacketProcessor::ProcessRecvPacket(header.socket, payload, header.payloadSize);
         }
         else
         {
-            PacketProcessor::ProcessSendPacket(Header.socket, payload, Header.payloadSize);
+            PacketProcessor::ProcessSendPacket(header.socket, payload, header.payloadSize);
         }
     }
 
     Log::WriteLog("管道断开，退出。");
-    CloseHandle(Pipe);
+    CloseHandle(pipe);
 }
 
 int main()

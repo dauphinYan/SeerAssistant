@@ -1,7 +1,7 @@
 #include "Cryptor.h"
 #include "Src/Common/Log.h"
 
-std::vector<uint8_t> Cryptor::Key;
+std::vector<uint8_t> Cryptor::key;
 
 // 将 vector A 的 [start, end) 部分切片出来。
 std::vector<uint8_t> Slice(const std::vector<uint8_t> &A, size_t start, size_t end)
@@ -21,30 +21,30 @@ std::vector<uint8_t> Merge(const std::vector<uint8_t> &A, const std::vector<uint
     return C;
 }
 
-void Cryptor::InitKey(const std::string &KeyStr)
+void Cryptor::InitKey(const std::string &keyStr)
 {
-    Key.assign(KeyStr.begin(), KeyStr.end());
-    Log::WriteLog("Initialize key: " + std::string(Key.begin(), Key.end()));
+    key.assign(keyStr.begin(), keyStr.end());
+    Log::WriteLog("Initialize key: " + std::string(key.begin(), key.end()));
 }
 
-std::vector<uint8_t> Cryptor::Encrypt(const std::vector<uint8_t> &Plain)
+std::vector<uint8_t> Cryptor::Encrypt(const std::vector<uint8_t> &plain)
 {
     return std::vector<uint8_t>();
 }
 
-std::vector<uint8_t> Cryptor::Decrypt(const std::vector<uint8_t> &Cipher)
+std::vector<uint8_t> Cryptor::Decrypt(const std::vector<uint8_t> &cipher)
 {
-    size_t len = Cipher.size();
-    if (len == 0 || Key.empty())
+    size_t len = cipher.size();
+    if (len == 0 || key.empty())
         return {};
 
     // 计算旋转量
-    int result = Key[(len - 1) % Key.size()] * 13 % len;
+    int result = key[(len - 1) % key.size()] * 13 % len;
 
     // 环形右移 result 个字节
     std::vector<uint8_t> rotated = Merge(
-        Slice(Cipher, len - result, len),
-        Slice(Cipher, 0, len - result));
+        Slice(cipher, len - result, len),
+        Slice(cipher, 0, len - result));
 
     // 右移/左移组合恢复原始字节序列（去掉最后一个字节）
     std::vector<uint8_t> plain(len - 1);
@@ -55,20 +55,20 @@ std::vector<uint8_t> Cryptor::Decrypt(const std::vector<uint8_t> &Cipher)
 
     // 异或解密
     size_t j = 0;
-    bool NeedBecomeZero = false;
+    bool needBecomeZero = false;
     for (size_t i = 0; i < plain.size(); ++i)
     {
-        if (j == 1 && NeedBecomeZero)
+        if (j == 1 && needBecomeZero)
         {
             j = 0;
-            NeedBecomeZero = false;
+            needBecomeZero = false;
         }
-        if (j == Key.size())
+        if (j == key.size())
         {
             j = 0;
-            NeedBecomeZero = true;
+            needBecomeZero = true;
         }
-        plain[i] = static_cast<uint8_t>(plain[i] ^ Key[j]);
+        plain[i] = static_cast<uint8_t>(plain[i] ^ key[j]);
         ++j;
     }
 
