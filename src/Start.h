@@ -28,5 +28,7 @@ private:
 private:
     static const wchar_t *PIPE_NAME;
 
+    static const std::string hookDllName;
+
     ClientType clientType;
 };

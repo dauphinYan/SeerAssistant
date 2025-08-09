@@ -16,6 +16,8 @@
 
 const wchar_t *Injector::PIPE_NAME = L"\\\\.\\pipe\\SeerSocketHook";
 
+const std::string Injector::hookDllName = "SocketHook_Flash.dll";
+
 Injector::Injector()
 {
     char Buffer[MAX_PATH];
@@ -49,7 +51,7 @@ void Injector::StartInjector()
     Log::WriteLog("目标 PID：" + processInfo.dwProcessId);
 
     CHAR full[MAX_PATH] = {0};
-    GetFullPathNameA("SocketHook.dll", MAX_PATH, full, nullptr);
+    GetFullPathNameA(hookDllName.c_str(), MAX_PATH, full, nullptr);
     std::string dllPath(full);
     cout << dllPath << endl;
     ResumeThread(processInfo.hThread);
@@ -120,7 +122,7 @@ bool Injector::InjectDll(DWORD pid, const std::string &dllPath, ClientType clien
             CHAR modName[MAX_PATH] = {0};
             if (GetModuleBaseNameA(curProcess, modules[i], modName, MAX_PATH))
             {
-                if (_stricmp(modName, "SocketHook.dll") == 0)
+                if (_stricmp(modName, hookDllName.c_str()) == 0)
                 {
                     remoteModule = modules[i];
                     break;
