@@ -25,6 +25,8 @@ private:
 
     void PipeServerLoop();
 
+    bool ReadExact(HANDLE pipe, void *buffer, size_t size);
+
 private:
     static const wchar_t *PIPE_NAME;
 

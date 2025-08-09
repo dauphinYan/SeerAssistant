@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 ClientType PacketProcessor::clientType = ClientType::Flash;
 
@@ -130,7 +131,7 @@ void PacketProcessor::ProcessRecvPacket(SOCKET socket, const vector<char> &data,
 
     s_RecvBuf.insert(s_RecvBuf.end(), data.begin(), data.begin() + length);
 
-    // 是否是同一连接。
+    // 不是同一连接。
     if (s_CurrentSocket != socket)
     {
         s_RecvBufIndex += length;
@@ -194,7 +195,6 @@ void PacketProcessor::ProcessRecvPacket(SOCKET socket, const vector<char> &data,
         {
             s_RecvBuf.erase(s_RecvBuf.begin(), s_RecvBuf.begin() + s_RecvBufIndex);
             s_RecvBufIndex = 0;
-            // s_CurrentSocket = socket;
         }
     }
 }

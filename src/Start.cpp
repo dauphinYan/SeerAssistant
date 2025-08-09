@@ -16,18 +16,18 @@
 
 const wchar_t *Injector::PIPE_NAME = L"\\\\.\\pipe\\SeerSocketHook";
 
-const std::string Injector::hookDllName = "SocketHook_Flash.dll";
+const std::string Injector::hookDllName = "SocketHook.dll";
 
 Injector::Injector()
 {
-    char Buffer[MAX_PATH];
-    GetCurrentDirectoryA(MAX_PATH, Buffer);
+    char buffer[MAX_PATH];
+    GetCurrentDirectoryA(MAX_PATH, buffer);
 
-    Log::InitLogPath(Buffer);
-    Log::InitBattleLogPath(Buffer);
+    Log::InitLogPath(buffer);
+    Log::InitBattleLogPath(buffer);
     Cryptor::InitKey("!crAckmE4nOthIng:-)");
     DispatcherManager::InitDispatcher();
-    clientType = ClientType::Flash;
+    clientType = ClientType::Unity;
     PacketProcessor::SetClientType(clientType);
 }
 
@@ -36,13 +36,13 @@ void Injector::StartInjector()
     std::thread pipeServer([this]
                            { this->PipeServerLoop(); });
 
-    std::string GamePath = (clientType == ClientType::Flash)
+    std::string gamePath = (clientType == ClientType::Flash)
                                ? R"(C:\Users\58448\Desktop\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
                                : R"(D:\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
 
     STARTUPINFOA startInfo = {sizeof(startInfo)};
     PROCESS_INFORMATION processInfo = {};
-    if (!CreateProcessA(GamePath.c_str(), nullptr, nullptr, nullptr,
+    if (!CreateProcessA(gamePath.c_str(), nullptr, nullptr, nullptr,
                         FALSE, CREATE_SUSPENDED, nullptr, nullptr, &startInfo, &processInfo))
     {
         Log::WriteLog("无法启动目标进程，错误:" + GetLastError(), LogLevel::Error);
@@ -204,15 +204,12 @@ void Injector::PipeServerLoop()
     HANDLE pipe = CreateNamedPipeW(
         PIPE_NAME,
         PIPE_ACCESS_INBOUND,
-        PIPE_TYPE_MESSAGE |
-            PIPE_READMODE_MESSAGE |
-            PIPE_WAIT,
-        1,
-        0, 0,
-        0, nullptr);
+        PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, // 消息模式
+        1, 0, 0, 0, nullptr);
+
     if (pipe == INVALID_HANDLE_VALUE)
     {
-        Log::WriteLog("创建管道名失败，错误码：" + std::to_string(GetLastError()), LogLevel::Error);
+        Log::WriteLog("创建管道失败，错误码：" + std::to_string(GetLastError()), LogLevel::Error);
         return;
     }
 
@@ -220,41 +217,90 @@ void Injector::PipeServerLoop()
 
     if (!ConnectNamedPipe(pipe, nullptr) && GetLastError() != ERROR_PIPE_CONNECTED)
     {
-        Log::WriteLog("连接管道名失败，错误码：" + std::to_string(GetLastError()), LogLevel::Error);
+        Log::WriteLog("连接管道失败，错误码：" + std::to_string(GetLastError()), LogLevel::Error);
         CloseHandle(pipe);
         return;
     }
 
+    // 最大包大小（header + payload），按需调整
+    const size_t MAX_PACKET_SIZE = 10 * 1024 * 1024; // 10MB
+    std::vector<char> msgBuf(MAX_PACKET_SIZE);
+
     while (true)
     {
-        PacketHeader header;
         DWORD bytesRead = 0;
-        if (!ReadFile(pipe, &header, sizeof(header), &bytesRead, nullptr) || bytesRead == 0)
-            break;
+        if (!ReadFile(pipe, msgBuf.data(), (DWORD)msgBuf.size(), &bytesRead, nullptr) || bytesRead == 0)
+        {
+            break; // 管道断开
+        }
 
+        if (bytesRead < sizeof(PacketHeader))
+        {
+            Log::WriteLog("收到数据太短，无法解析 header", LogLevel::Error);
+            break;
+        }
+
+        // 解析包头
+        PacketHeader header;
+        memcpy(&header, msgBuf.data(), sizeof(PacketHeader));
+
+        // 校验长度
+        if (header.payloadSize != bytesRead - sizeof(PacketHeader))
+        {
+            Log::WriteLog("数据长度不匹配: header.payloadSize=" +
+                              std::to_string(header.payloadSize) + " 实际=" +
+                              std::to_string(bytesRead - sizeof(PacketHeader)),
+                          LogLevel::Error);
+            break;
+        }
+        if (header.payloadSize > MAX_PACKET_SIZE - sizeof(PacketHeader))
+        {
+            Log::WriteLog("Payload 太大，拒绝处理", LogLevel::Error);
+            break;
+        }
+
+        if (header.payloadSize == 1)
+            continue;
+
+        // 复制 payload
         std::vector<char> payload(header.payloadSize);
-        if (!ReadFile(pipe, payload.data(), header.payloadSize, &bytesRead, nullptr))
-            break;
+        if (header.payloadSize > 0)
+        {
+            memcpy(payload.data(), msgBuf.data() + sizeof(PacketHeader), header.payloadSize);
+        }
 
-        std::string dirStr = (header.direction == 0) ? "Recv" : "Send";
-
+        // 打印数据（十六进制）
         std::ostringstream oss;
-        for (int i = 0; i < header.payloadSize; ++i)
+        for (size_t i = 0; i < payload.size(); ++i)
+        {
             oss << std::hex << std::setw(2) << std::setfill('0')
                 << (unsigned int)(unsigned char)payload[i] << " ";
+        }
+        Log::WriteLog(oss.str(), LogLevel::Temp, false);
 
+        // 分发处理
         if (header.direction == 0)
-        {
             PacketProcessor::ProcessRecvPacket(header.socket, payload, header.payloadSize);
-        }
         else
-        {
             PacketProcessor::ProcessSendPacket(header.socket, payload, header.payloadSize);
-        }
     }
 
     Log::WriteLog("管道断开，退出。");
     CloseHandle(pipe);
+}
+
+bool Injector::ReadExact(HANDLE pipe, void *buffer, size_t size)
+{
+    char *ptr = static_cast<char *>(buffer);
+    size_t totalRead = 0;
+    DWORD bytesRead = 0;
+    while (totalRead < size)
+    {
+        if (!ReadFile(pipe, ptr + totalRead, (DWORD)(size - totalRead), &bytesRead, nullptr) || bytesRead == 0)
+            return false;
+        totalRead += bytesRead;
+    }
+    return true;
 }
 
 int main()
