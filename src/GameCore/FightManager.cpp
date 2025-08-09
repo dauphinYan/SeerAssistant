@@ -284,26 +284,5 @@ void PetFightManager::ShowChangePetInfo(const uint32_t curId)
 
 void PetFightManager::PrintOtherPetInfo()
 {
-    int count = 0;
-    std::string line = "对方精灵状况：\n";
 
-    for (auto it : petsHealth)
-    {
-        if (it.first == 0)
-            continue;
-        std::string petName = PetManager::GetPetName(it.first);
-        std::string hpStr = std::to_string(it.second.CurHp) + "/" + std::to_string(it.second.maxHp);
-
-        std::string petInfo = petName + "：" + hpStr + "  ";
-
-        if (count >= 4)
-        {
-            line += "\n";
-            count = 0;
-        }
-        line += petInfo;
-        count++;
-    }
-
-    Log::WriteBattleLog(line);
 }
