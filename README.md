@@ -2,11 +2,15 @@
 
 基于C++的赛尔号巅峰辅助。
 
+入门链接：[赛尔号通信协议逆向：封包分析](https://dauphinyan.github.io/2025/07/03/game-reversing/network-protocol-reversing)
+
 ### 功能
+
+- 抓包并解析数据。
   
 - 记录双方历史操作。
   
-- 记录对手精灵血量。
+- 记录对手精灵血量（暂不公开记录部分）。
 
 ### 说明
 
@@ -22,13 +26,23 @@
 
 ### 运行
 
+！！！ 请注意：需要自行配置`CMake`与`MinGW`编译器
+
 #### 编译 `SocketHook.dll`
 
 详见 [SeerHook](https://github.com/dauphinYan/SeerHook)。
 
 #### 使用CMake构建项目
 
-1. 修改`Src/Start.cpp`中`GamePath`为游戏启动路径。
+1. 修改`Src/Start.cpp`中部分信息。
+
+    ```cpp
+    const ClientType Injector::clientType = ClientType::Unity;
+
+    const std::string Injector::gamePath_Flash = R"(填写你的路径)";
+
+    const std::string Injector::gamePath_Unity = R"(填写你的路径)";
+    ```
 
 2. 使用`CMake`进行项目构建。
    
@@ -36,7 +50,7 @@
    
 4. 将前面编译得到的`SocketHook.dll`放入`SeerAssistant.exe`所在的目录中。
 
-### 声明
+### 特别声明
 
 本项目采用的第三方库有：`nlohmann`、`tinyxml2`。
 
@@ -46,3 +60,6 @@
 
 如因滥用本项目造成法律纠纷，**责任由使用者自行承担**。
 
+### 联系作者
+
+邮箱：584485321@qq.com

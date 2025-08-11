@@ -18,6 +18,12 @@ const wchar_t *Injector::PIPE_NAME = L"\\\\.\\pipe\\SeerSocketHook";
 
 const std::string Injector::hookDllName = "SocketHook.dll";
 
+const ClientType Injector::clientType = ClientType::Unity;
+
+const std::string Injector::gamePath_Flash = R"(C:\Users\58448\Desktop\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)";
+
+const std::string Injector::gamePath_Unity = R"(D:\Games\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
+
 Injector::Injector()
 {
     char buffer[MAX_PATH];
@@ -27,7 +33,6 @@ Injector::Injector()
     Log::InitBattleLogPath(buffer);
     Cryptor::InitKey("!crAckmE4nOthIng:-)");
     DispatcherManager::InitDispatcher();
-    clientType = ClientType::Unity;
     PacketProcessor::SetClientType(clientType);
 }
 
@@ -36,9 +41,9 @@ void Injector::StartInjector()
     std::thread pipeServer([this]
                            { this->PipeServerLoop(); });
 
-    std::string gamePath = (clientType == ClientType::Flash)
-                               ? R"(C:\Users\58448\Desktop\SeerLauncher\bin\x64\Debug\SeerLauncher.exe)"
-                               : R"(D:\Seer\SeerLauncher\games\NewSeer\Seer.exe)";
+    std::string gamePath = clientType == ClientType::Flash ? gamePath_Flash : gamePath_Unity;
+
+    cout << gamePath << endl;
 
     STARTUPINFOA startInfo = {sizeof(startInfo)};
     PROCESS_INFORMATION processInfo = {};
