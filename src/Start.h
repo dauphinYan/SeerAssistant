@@ -32,5 +32,9 @@ private:
 
     static const std::string hookDllName;
 
-    ClientType clientType;
+    static const ClientType clientType;
+
+    static const std::string gamePath_Flash;
+
+    static const std::string gamePath_Unity;
 };
