@@ -7,7 +7,7 @@ struct PacketData;
 
 struct PetHealth
 {
-    int CurHp = 0;
+    int curHp = 0;
     int maxHp = 0;
 };
 

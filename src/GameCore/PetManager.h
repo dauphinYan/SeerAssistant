@@ -15,7 +15,7 @@ struct MoveSkill
     uint32_t pp;
 };
 
-struct UOtherPeoplePetInfo
+struct OtherPeoplePetInfo
 {
     uint32_t catchTime; // 捕获时间
     uint32_t useflag;   // 使用标志
@@ -48,7 +48,7 @@ struct UOtherPeoplePetInfo
 class PetManager
 {
 public:
-    static UOtherPeoplePetInfo GetOtherPeoplePetInfo(const PacketData &data, int &offset);
+    static OtherPeoplePetInfo GetOtherPeoplePetInfo(const PacketData &data, int &offset);
 
 public:
     static std::string GetPetName(const uint32_t &petId);

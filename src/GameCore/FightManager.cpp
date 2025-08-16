@@ -37,7 +37,7 @@ void PetFightManager::OnNoteStartFight(const PacketData &data)
         SetPetID_1(otherFightPetInfo.petId);
 
         PetHealth newPetHealth;
-        newPetHealth.CurHp = otherFightPetInfo.hp;
+        newPetHealth.curHp = otherFightPetInfo.hp;
         newPetHealth.maxHp = otherFightPetInfo.maxHp;
         petsHealth[petId_1] = newPetHealth;
     }
@@ -46,7 +46,7 @@ void PetFightManager::OnNoteStartFight(const PacketData &data)
         SetPetID_1(fightPetInfo.petId);
 
         PetHealth newPetHealth;
-        newPetHealth.CurHp = fightPetInfo.hp;
+        newPetHealth.curHp = fightPetInfo.hp;
         newPetHealth.maxHp = fightPetInfo.maxHp;
         petsHealth[petId_1] = newPetHealth;
 
@@ -174,7 +174,7 @@ void PetFightManager::OnNoteUseSkill(const PacketData &data)
                                 false);
 
             PetHealth newPetHealth;
-            newPetHealth.CurHp = info.hp;
+            newPetHealth.curHp = info.hp;
             newPetHealth.maxHp = info.maxHp;
             petsHealth[petsIdByCatchTime[info.id]] = newPetHealth;
         }
@@ -187,7 +187,7 @@ void PetFightManager::OnNoteUseSkill(const PacketData &data)
         else
         {
             PetHealth newPetHealth;
-            newPetHealth.CurHp = remainHp;
+            newPetHealth.curHp = remainHp;
             newPetHealth.maxHp = maxHp;
             petsHealth[petId_1] = newPetHealth;
 
@@ -208,10 +208,10 @@ void PetFightManager::OnGetUserPerInfoByID(const PacketData &data)
 
     uint32_t rub = PacketProcessor::ReadUnsignedInt(data.body, offset);
 
-    vector<UOtherPeoplePetInfo> pets;
+    vector<OtherPeoplePetInfo> pets;
     for (int i = 0; i < petCount; ++i)
     {
-        UOtherPeoplePetInfo pet = PetManager::GetOtherPeoplePetInfo(data, offset);
+        OtherPeoplePetInfo pet = PetManager::GetOtherPeoplePetInfo(data, offset);
         petsIdByCatchTime[pet.catchTime] = pet.id;
         pets.push_back(pet);
     }

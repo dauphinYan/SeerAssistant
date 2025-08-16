@@ -7,9 +7,9 @@
 std::unordered_map<uint32_t, std::string> PetManager::petNameMap;
 std::once_flag PetManager::initFlag;
 
-UOtherPeoplePetInfo PetManager::GetOtherPeoplePetInfo(const PacketData &data, int &offset)
+OtherPeoplePetInfo PetManager::GetOtherPeoplePetInfo(const PacketData &data, int &offset)
 {
-    UOtherPeoplePetInfo pet;
+    OtherPeoplePetInfo pet;
     pet.catchTime = PacketProcessor::ReadUnsignedInt(data.body, offset);
     pet.useflag = PacketProcessor::ReadUnsignedInt(data.body, offset);
     pet.id = PacketProcessor::ReadUnsignedInt(data.body, offset);
