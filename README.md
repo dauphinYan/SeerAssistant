@@ -2,7 +2,7 @@
 
 基于C++的赛尔号巅峰辅助。
 
-入门链接：[赛尔号通信协议逆向：封包分析](https://dauphinyan.github.io/2025/07/03/game-reversing/network-protocol-reversing)
+入门链接：[赛尔号通信协议逆向：封包分析](https://dolphindream.cn/2025/07/03/game-reversing/network-protocol-reversing/)
 
 ### 功能
 
