@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.10)
+project(SeerAssistant LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(${PROJECT_NAME}
+    Src/Start.cpp
+    Src/Common/Log.cpp
+    Src/Net/PacketParser/Packet.cpp
+    Src/Net/PacketParser/Cryptor.cpp
+    Src/Net/MD5/MD5.cpp
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} psapi ws2_32)
+
+    add_library(MinHook STATIC
+        Third/MinHook/src/buffer.c
+        Third/MinHook/src/hook.c
+        Third/MinHook/src/trampoline.c
+        Third/MinHook/src/hde/hde32.c
+        Third/MinHook/src/hde/hde64.c
+    )
+    target_include_directories(MinHook PUBLIC Third/MinHook/include)
+
+    add_library(SocketHook SHARED Src/Hook/SocketHook.cpp)
+    target_include_directories(SocketHook PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(SocketHook PRIVATE MinHook ws2_32)
+    if(MINGW)
+        # The injected DLL must load in the game process without the MinGW runtime on PATH.
+        target_link_options(SocketHook PRIVATE -static)
+    endif()
+    set_target_properties(SocketHook PROPERTIES PREFIX "")
+    add_dependencies(${PROJECT_NAME} SocketHook)
+    set_target_properties(${PROJECT_NAME} SocketHook PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+endif()

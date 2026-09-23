@@ -1,0 +1,6 @@
+*.exe
+.vscode
+*.dll
+*.log
+build
+Capture/
