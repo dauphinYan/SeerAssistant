@@ -2,6 +2,8 @@
 
 基于C++的赛尔号巅峰辅助。
 
+QT版下载：https://dauphinyan.lanzoub.com/b00b4xu1ef 密码：hggz
+
 入门链接：[赛尔号通信协议逆向：封包分析](https://dolphindream.cn/article/blog/seer-protocol-analysis/)
 
 ### 功能
